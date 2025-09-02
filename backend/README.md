@@ -1,8 +1,9 @@
 ## Scripts
 To run install
-
-### pip install flask flask-cors flask-sqlalchemy werkzeug
-
+```bash
+pip install flask flask-cors flask-sqlalchemy werkzeug
+```
 run
-
-### python app.py
+```cmd
+python app.py
+```
