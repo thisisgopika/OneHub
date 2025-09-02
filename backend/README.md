@@ -7,3 +7,7 @@ run
 ```cmd
 python app.py
 ```
+
+## Note
+
+No password encrption, stored as a plain text "werkzeug" is not used 
