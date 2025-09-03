@@ -1,27 +1,24 @@
-import pool from "../config/db.js";
+import pool from "../config/database.js";
 
 // Get all users
 export const getUsers = async (req, res, next) => {
   try {
-    const result = await pool.query("SELECT * FROM users");
+    const result = await pool.query("SELECT user_id, name, email, role, class, semester FROM users");
     res.json(result.rows);
   } catch (err) {
     next(err);
   }
 };
 
-// Add new user
-export const createUser = async (req, res, next) => {
+// Get users by role
+export const getUsersByRole = async (req, res, next) => {
   try {
-    const { name, email } = req.body;
-    if (!name || !email) {
-      return res.status(400).json({ error: "Name and email are required" });
-    }
+    const { role } = req.params;
     const result = await pool.query(
-      "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *",
-      [name, email]
+      "SELECT user_id, name, email, role, class, semester FROM users WHERE role = $1",
+      [role]
     );
-    res.status(201).json(result.rows[0]);
+    res.json(result.rows);
   } catch (err) {
     next(err);
   }
@@ -30,43 +27,32 @@ export const createUser = async (req, res, next) => {
 // Get user by ID
 export const getUserById = async (req, res, next) => {
   try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [
-      req.params.id,
-    ]);
-    if (result.rows.length === 0)
-      return res.status(404).json({ error: "User not found" });
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Update user
-export const updateUser = async (req, res, next) => {
-  try {
-    const { name, email } = req.body;
     const result = await pool.query(
-      "UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *",
-      [name, email, req.params.id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ error: "User not found" });
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Delete user
-export const deleteUser = async (req, res, next) => {
-  try {
-    const result = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING *",
+      "SELECT user_id, name, email, role, class, semester FROM users WHERE user_id = $1",
       [req.params.id]
     );
     if (result.rows.length === 0)
       return res.status(404).json({ error: "User not found" });
-    res.json({ message: "User deleted successfully" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Create new user
+export const createUser = async (req, res, next) => {
+  try {
+    const { user_id, password, name, email, role, class: userClass, semester } = req.body;
+    
+    if (!user_id || !password || !name || !email || !role) {
+      return res.status(400).json({ error: "Required fields: user_id, password, name, email, role" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO users (user_id, password, name, email, role, class, semester) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING user_id, name, email, role, class, semester",
+      [user_id, password, name, email, role, userClass, semester]
+    );
+    res.status(201).json(result.rows[0]);
   } catch (err) {
     next(err);
   }
