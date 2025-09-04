@@ -12,4 +12,4 @@ if the website shows
           Backend: ✅ Connected
           Database: ✅ Connected
           DB Time: 2025-09-04T14:12:36.602Z
-it working perfect
+its working perfect
