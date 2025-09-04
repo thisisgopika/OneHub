@@ -1,4 +1,14 @@
 # OneHub
 Unified Platform for Campus Events and Volunteering
 
-create a folder backend-app and copy all these files
+its the updated version of ensuring the connection between the frontned(react+vite) backend(node+express) and database(postgresql)
+copy the file athe run the belo code for both
+npm run dev(in front end as well as backend)
+if the website shows
+          🚀 OneHub Frontend
+          System Status
+          Frontend: ✅ Running
+          Backend: ✅ Connected
+          Database: ✅ Connected
+          DB Time: 2025-09-04T14:12:36.602Z
+it working perfect
