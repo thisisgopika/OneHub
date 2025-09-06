@@ -16,4 +16,4 @@ Unified Platform for Campus Events and Volunteering
 - Use `req.user.user_id` for current user
 - Frontend: use `authService` functions
 
-Ready for integration! Pull latest main branch to get auth system.
+Ready for integration! Pull latest branch to get auth system.
