@@ -39,7 +39,22 @@ const api = {
     });
     
     return response.json();
-  }
+  },
+
+  // PUT request
+  put: async (endpoint, data = {}, token = null) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    return response.json();
+  },
+
 };
 
 export default api;

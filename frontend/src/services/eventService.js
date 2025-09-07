@@ -1,0 +1,59 @@
+import api from './api.js';
+import authService from './authService.js';
+
+const eventService = {
+  create: async (eventcreate) => {
+    try {
+      const response = await api.post('/events', eventcreate);
+
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  getOrganizerEvents: async () => {
+    try {
+      const user = authService.getCurrentUser();
+      const user_id = user.user_id;
+      const response = await api.get(`/events?organizer_id=${user_id}`);
+      console.log('Backend response:', response); // ✅ debug
+  
+      // Make sure response.events exists
+      return { success: true, data: response.events || [] };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  getEventReport: async (eventId) => {
+    try {
+      const response = await api.get(`/events/${eventId}/report`);
+      
+      if (response.success) {
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: response.error || 'Failed to fetch event report' };
+      }
+    } catch (error) {
+      console.error('Error fetching event report:', error.message);
+      return { success: false, error: error.message || 'Something went wrong' };
+    }
+  },
+
+  getEventById: async (eventId) => {
+    try {
+      const response = await api.get(`/events/${eventId}`);
+      return { success: true, data: response.data }; // wrap in success
+    } catch (err) {
+      console.error(`Error fetching event ${eventId}:`, err);
+      return { success: false, error: err.message };
+    }
+  }
+    
+};
+
+export default eventService;

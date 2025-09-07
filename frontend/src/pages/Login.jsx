@@ -31,7 +31,23 @@ const Login = () => {
       if (result.success) {
         // Login successful - redirect to dashboard
         console.log('Login successful:', result.data);
-        navigate('/dashboard'); // Redirect to dashboard
+        //switch based on roles
+        const user = result.data.user;
+
+        switch (user.role) {
+          case 'admin':
+            navigate('/dashboard/admin');
+            break;
+          case 'student':
+            navigate('/dashboard/student');
+            break;
+          case 'organizer':
+            navigate('/dashboard/organizer');
+            break;
+          default:
+            navigate('/unauthorized');
+        }
+
       } else {
         // Login failed - show error
         setError(result.error || 'Login failed');

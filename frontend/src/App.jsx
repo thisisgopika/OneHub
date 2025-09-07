@@ -4,7 +4,18 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import authService from './services/authService.js';
 
+import AdminDashboard from './components/admin/Dashboard.jsx';
+import StudentDashboard from './components/student/Dashboard.jsx';
+import OrganizerDashboard from './components/organizer/Dashboard.jsx';
+
+import CreateEvent from './components/organizer/CreateEvent.jsx' ;
+import VolunteerApproval from './components/organizer/VolunteerApproval.jsx';
+import EventReport from './components/organizer/EventReport.jsx';
+import ManageEvents from './components/organizer/ManageEvents.jsx';
+import EventDetails from './components/organizer/pages/EventDetails.jsx';
+
 // Simple Dashboard component for testing
+/*
 const Dashboard = () => {
   const user = authService.getCurrentUser();
   
@@ -39,11 +50,26 @@ const Dashboard = () => {
       </button>
     </div>
   );
-};
+}; */
+
+// Unauthorized page
+const Unauthorized = () => (
+  <div style={{ textAlign: 'center', padding: '20px' }}>
+    <h2>403 - Unauthorized</h2>
+    <p>You do not have permission to view this page.</p>
+  </div>
+);
 
 // Protected Route component
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
+
   const isAuthenticated = authService.isAuthenticated();
+
+  const user = authService.getCurrentUser();
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" />;
+  }
+
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
@@ -54,15 +80,92 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route 
-            path="/dashboard" 
+        
+          {/* Role-Specific Dashboards */}
+          <Route
+            path="/dashboard/admin"
             element={
-              <ProtectedRoute>
-                <Dashboard />
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route path="/" element={<Navigate to="/login" />} />
+
+          <Route
+            path="/dashboard/student"
+            element={
+              <ProtectedRoute  allowedRoles={['student']}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/organizer"
+            element={
+              <ProtectedRoute allowedRoles={['organizer']}>
+                <OrganizerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          {/* Nested route for creating events */}
+          <Route
+            path="/dashboard/organizer/create"
+            element={
+              <ProtectedRoute allowedRoles={['organizer','admin']}>
+                <CreateEvent />
+              </ProtectedRoute>
+            }
+          />
+          {/* Nested route for volunteer approval */}
+          <Route
+            path="/dashboard/organizer/volunteer_approval"
+            element={
+              <ProtectedRoute allowedRoles={['organizer','admin']}>
+                <VolunteerApproval />
+              </ProtectedRoute>
+            }
+          />
+          {/* Nested route for Event report */}
+          <Route
+            path="/dashboard/organizer/event_report"
+            element={
+              <ProtectedRoute allowedRoles={['organizer','admin']}>
+                <EventReport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/organizer/events"
+            element={
+              <ProtectedRoute allowedRoles={['organizer','admin']}>
+                <ManageEvents />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/organizer/events/:eventId"
+            element={
+              <ProtectedRoute allowedRoles={['organizer','admin']}>
+                <EventDetails />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/unauthorized" element={<Unauthorized />} />
+
+          {/* Default redirect */}
+          <Route
+            path="/"
+            element={
+              authService.isAuthenticated() ? (
+                <Navigate to={`/dashboard/${authService.getCurrentUser().role}`} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+
         </Routes>
       </div>
     </Router>

@@ -3,6 +3,7 @@ import pool from "../config/database.js";
 import authRoutes from "./auth.js";
 import userRoutes from "./users.js";
 import eventRoutes from "./events.js";
+import volunteerRoutes from "./volunteers.js";
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.get("/health", async (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/events", eventRoutes);
+router.use("/volunteers",volunteerRoutes);
 
 export default router;

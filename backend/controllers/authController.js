@@ -44,6 +44,7 @@ export const register = async (req, res) => {
   };
 
   export const login = async (req, res) => {
+
     try {
       // 1. Check JWT secret is configured (do this FIRST)
       if (!process.env.JWT_SECRET) {
@@ -73,7 +74,7 @@ export const register = async (req, res) => {
       
       // 5. Compare password
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      
+          
       if (!isPasswordValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
