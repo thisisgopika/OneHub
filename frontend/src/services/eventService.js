@@ -17,9 +17,9 @@ const eventService = {
 
   getOrganizerEvents: async () => {
     try {
-      const user = authService.getCurrentUser();
-      const user_id = user.user_id;
-      const response = await api.get(`/events?organizer_id=${user_id}`);
+      //const user = authService.getCurrentUser();
+      //const user_id = user.user_id;
+      const response = await api.get(`/events`);
       console.log('Backend response:', response); // ✅ debug
   
       // Make sure response.events exists

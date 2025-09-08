@@ -3,66 +3,41 @@ import pool from '../config/database.js';
 // Event creation controller
 export const createEvent = async (req, res) => {
   try {
-    const {
-      event_id,
-      name,
-      description,
-      date,
-      venue,
-      category,
-      created_by,
-      deadline,
-      max_participants
-    } = req.body;
+    const { name, description, date, venue, category, deadline, max_participants } = req.body;
+    
+    // Get user from JWT token
+    const created_by = req.user.user_id;
+
+    // Validate organizer permissions
+   // if (req.user.role !== 'organizer' && req.user.role !== 'admin') {
+     // return res.status(403).json({ error: 'Only organizers can create events' });
+    //}
 
     // 1. Validate required fields
-    if (!event_id || !name || !date || !venue || !category || !created_by || !deadline) {
+    if (!name || !date || !venue || !category || !deadline) {
       return res.status(400).json({ error: "All required fields must be provided" });
     }
 
-    // 2. Ensure deadline is a future date
+    // Validate deadline is future date
     const currentDate = new Date();
     const deadlineDate = new Date(deadline);
-
     if (deadlineDate <= currentDate) {
       return res.status(400).json({ error: "Deadline must be a future date" });
     }
 
-    // 3. Check if event already exists (using event_id)
-    const existingEvent = await pool.query(
-      'SELECT event_id FROM events WHERE event_id = $1',
-      [event_id]
-    );
-
-    if (existingEvent.rows.length > 0) {
-      return res.status(400).json({ error: "Event ID already exists" });
-    }
-
-    // 4. Insert into database
+    //  Insert into database (event_id will be auto-generated)
     const result = await pool.query(
-      `INSERT INTO events 
-        (event_id, name, description, date, venue, category, created_by, deadline, max_participants) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+      `INSERT INTO events (name, description, date, venue, category, created_by, deadline, max_participants) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [
-        event_id,
-        name,
-        description || '',
-        date,
-        venue,
-        category,
-        created_by,
-        deadline,
-        max_participants || null
-      ]
+      [name, description || '', date, venue, category, created_by, deadline, max_participants || null]
     );
 
-    const newEvent = result.rows[0];
     res.status(201).json({
       message: "Event created successfully",
-      event: newEvent
+      event: result.rows[0]
     });
-
+    
   } catch (error) {
     console.error('Create Event Error:', error.message);
     res.status(500).json({ error: "Event creation failed" });
@@ -72,16 +47,17 @@ export const createEvent = async (req, res) => {
 // GET /api/events - Show organizer's events with stats
 export const getOrganizerEvents = async (req, res) => {
   try {
-    const organizer_id = req.query.organizer_id; // frontend passes ?organizer_id=O101
-
+    // Get organizer from JWT token, not query parameter
+    const organizer_id = req.user.user_id;
+    
     const result = await pool.query(
       `SELECT e.*,
-              COUNT(r.user_id) AS reg_count,
-              COUNT(va.user_id) AS vol_count
+              COUNT(DISTINCT r.user_id) AS reg_count,
+              COUNT(DISTINCT va.user_id) AS vol_count
        FROM events e
        LEFT JOIN registrations r ON r.event_id = e.event_id
        LEFT JOIN volunteer_applications va ON va.event_id = e.event_id
-       WHERE e.created_by = $1
+       WHERE e.created_by = $1 AND e.deadline > NOW()
        GROUP BY e.event_id
        ORDER BY e.date ASC`,
       [organizer_id]
