@@ -49,8 +49,8 @@ export const acceptVolunteer = async (req, res) => {
   
       // 3. Insert notification
       await pool.query(
-        `INSERT INTO notifications (user_id, message, created_at)
-         VALUES ($1, $2, NOW())`,
+        `INSERT INTO notifications (user_id, message, status, created_at)
+         VALUES ($1, $2, 'unread', NOW())`,
         [user_id, `You are selected as Volunteer for ${eventName}`]
       );
   
@@ -82,8 +82,8 @@ export const acceptVolunteer = async (req, res) => {
   
       // 2. Insert notification
       await pool.query(
-        `INSERT INTO notifications (user_id, message, created_at)
-         VALUES ($1, $2, NOW())`,
+        `INSERT INTO notifications (user_id, message, status, created_at)
+         VALUES ($1, $2, 'unread', NOW())`,
         [user_id, `Your volunteer request was rejected`]
       );
   

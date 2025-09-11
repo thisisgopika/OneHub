@@ -1,10 +1,13 @@
 import { Router } from "express";
-import { acceptVolunteer,rejectVolunteer} from "../controllers/volunteerController.js";
+import { verifyToken } from '../middleware/auth.js';  // Add this import
+import { acceptVolunteer, rejectVolunteer } from "../controllers/volunteerController.js";
+
 const router = Router();
 
-// Example: GET /api/volunteers
-router.put('/:id/accept', acceptVolunteer);
-router.put('/:id/reject', rejectVolunteer);
+// Add verifyToken middleware to protected routes
+router.put('/:id/accept', verifyToken, acceptVolunteer);
+router.put('/:id/reject', verifyToken, rejectVolunteer);
+
 router.get("/", (req, res) => {
   res.json({ message: "Volunteers route works ✅" });
 });

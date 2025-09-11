@@ -7,7 +7,6 @@ const CreateEvent = () => {
   const user = authService.getCurrentUser();
 
   const [formData, setFormData] = useState({
-    event_id: '',
     name: '',
     description: '',
     date: '',
@@ -44,7 +43,6 @@ const CreateEvent = () => {
       if (result.success) {
         setSuccess('Event created successfully!');
         setFormData({
-          event_id: '',
           name: '',
           description: '',
           date: '',
@@ -84,20 +82,6 @@ const CreateEvent = () => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Event ID */}
-        <div style={{ marginBottom: '15px' }}>
-          <label>Event ID:</label>
-          <input
-            type="text"
-            name="event_id"
-            value={formData.event_id}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            placeholder="Enter unique event ID"
-          />
-        </div>
-
         {/* Event Name */}
         <div style={{ marginBottom: '15px' }}>
           <label>Event Name:</label>
