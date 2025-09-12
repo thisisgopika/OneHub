@@ -1,5 +1,9 @@
 import pool from '../config/database.js';
 
+// ==============================
+// Organizer Controllers
+// ==============================
+
 // Event creation controller
 export const createEvent = async (req, res) => {
   try {
@@ -14,12 +18,10 @@ export const createEvent = async (req, res) => {
       max_participants
     } = req.body;
 
-    // 1. Validate required fields (no event_id needed now)
     if (!name || !date || !venue || !category || !created_by || !deadline) {
       return res.status(400).json({ error: "All required fields must be provided" });
     }
 
-    // 2. Ensure deadline is a future date
     const currentDate = new Date();
     const deadlineDate = new Date(deadline);
 
@@ -27,12 +29,10 @@ export const createEvent = async (req, res) => {
       return res.status(400).json({ error: "Deadline must be a future date" });
     }
 
-    // 3. Get the current maximum event_id
     const maxIdResult = await pool.query(`SELECT MAX(event_id) AS max_id FROM events`);
-    const maxId = maxIdResult.rows[0].max_id || 0; // If no rows yet, start at 0
+    const maxId = maxIdResult.rows[0].max_id || 0;
     const newEventId = maxId + 1;
 
-    // 4. Insert into database
     const result = await pool.query(
       `INSERT INTO events 
         (event_id, name, description, date, venue, category, created_by, deadline, max_participants) 
@@ -47,7 +47,7 @@ export const createEvent = async (req, res) => {
         category,
         created_by,
         deadline,
-        max_participants || 100 // default to 100 if not provided
+        max_participants || 100
       ]
     );
 
@@ -56,19 +56,16 @@ export const createEvent = async (req, res) => {
       message: "Event created successfully",
       event: newEvent
     });
-
   } catch (error) {
     console.error('Create Event Error:', error.message);
     res.status(500).json({ error: "Event creation failed" });
   }
 };
 
-// GET /api/events - Show organizer's events with stats
+// Organizer’s events with stats
 export const getOrganizerEvents = async (req, res) => {
   try {
-    // Get organizer from JWT token, not query parameter
     const organizer_id = req.user.user_id;
-    
     const result = await pool.query(
       `SELECT e.*,
               COUNT(DISTINCT r.user_id) AS reg_count,
@@ -89,47 +86,38 @@ export const getOrganizerEvents = async (req, res) => {
   }
 };
 
-// GET /api/events/:id/report - Get event summary
+// Event summary report
 export const getEventReport = async (req, res) => {
-  const { id } = req.params; // Event ID from URL
-
+  const { id } = req.params;
   try {
     const result = await pool.query(
-      `
-      SELECT 
+      `SELECT 
         COUNT(DISTINCT r.user_id) AS total_attendees,
         COUNT(DISTINCT CASE WHEN va.status = 'accepted' THEN va.user_id END) AS total_volunteers
-      FROM events e
-      LEFT JOIN registrations r ON e.event_id = r.event_id
-      LEFT JOIN volunteer_applications va ON e.event_id = va.event_id
-      WHERE e.event_id = $1
-      `,
-      [id] // ✅ PostgreSQL uses $1 here
+       FROM events e
+       LEFT JOIN registrations r ON e.event_id = r.event_id
+       LEFT JOIN volunteer_applications va ON e.event_id = va.event_id
+       WHERE e.event_id = $1`,
+      [id]
     );
 
     if (!result.rows || result.rows.length === 0) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    res.json({
-      success: true,
-      data: result.rows[0] // Return the first row
-    });
+    res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('Error generating event report:', error.message);
     res.status(500).json({ error: 'Failed to generate report' });
   }
 };
 
-// GET /api/events/:id- Get event by id
+// Get event by ID
 export const getEventByID = async (req, res) => {
   const { id } = req.params;
-
   try {
     const result = await pool.query(
-      `SELECT *
-       FROM events
-       WHERE event_id = $1`,
+      `SELECT * FROM events WHERE event_id = $1`,
       [id]
     );
 
@@ -137,17 +125,16 @@ export const getEventByID = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
 
-    const event = result.rows[0];
-    res.json({ success: true, data: event });
+    res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error(`Error fetching event ${id}:`, err);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
 
-// Update an event
+// Update event
 export const updateEvent = async (req, res) => {
-  const { id } = req.params; // event_id from URL
+  const { id } = req.params;
   const {
     name,
     description,
@@ -159,17 +146,14 @@ export const updateEvent = async (req, res) => {
   } = req.body;
 
   try {
-    // Validate event exists
     const existingEvent = await pool.query(
       `SELECT * FROM events WHERE event_id = $1`,
       [id]
     );
-
     if (existingEvent.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
 
-    // Update event
     const updatedEvent = await pool.query(
       `UPDATE events
        SET name = $1,
@@ -204,31 +188,54 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-// Delete an event
+// Delete event
 export const deleteEvent = async (req, res) => {
   const { id } = req.params;
-
   try {
-    // Check if event exists
     const eventCheck = await pool.query(`SELECT * FROM events WHERE event_id = $1`, [id]);
     if (eventCheck.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
 
-    // Delete related registrations and volunteer applications first
     await pool.query(`DELETE FROM registrations WHERE event_id = $1`, [id]);
     await pool.query(`DELETE FROM volunteer_applications WHERE event_id = $1`, [id]);
-
-    // Delete the event itself
     await pool.query(`DELETE FROM events WHERE event_id = $1`, [id]);
 
-    res.json({
-      success: true,
-      message: 'Event deleted successfully'
-    });
+    res.json({ success: true, message: 'Event deleted successfully' });
   } catch (error) {
     console.error('Delete Event Error:', error.message);
     res.status(500).json({ success: false, error: 'Failed to delete event' });
   }
 };
 
+// ==============================
+// Student Controllers
+// ==============================
+
+// Get all events (for students) — supports ?upcoming=true and ?category=...
+export const getAllEvents = async (req, res) => {
+  try {
+    const { upcoming, category } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (upcoming === 'true') {
+      conditions.push('date >= NOW()::date'); // ✅ safer comparison
+    }
+    if (category) {
+      params.push(category);
+      conditions.push(`category = $${params.length}`);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const query = `SELECT * FROM events ${whereClause} ORDER BY date ASC`;
+
+    console.log("🔎 SQL query:", query, params); // debug
+
+    const { rows } = await pool.query(query, params);
+    res.json({ events: rows });
+  } catch (err) {
+    console.error('getAllEvents error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+};

@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import authService from '../services/authService.js';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import authService from "../services/authService.js";
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    user_id: '',
-    password: ''
+    user_id: "",
+    password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   // Handle input changes
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -23,54 +23,59 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const result = await authService.login(formData);
-      
-      if (result.success) {
-        // Login successful - redirect to dashboard
-        console.log('Login successful:', result.data);
-        //switch based on roles
-        const user = result.data.user;
 
+      if (result.success) {
+        const user = result.data; // ✅ already contains { user_id, role, name, email, token }
+        console.log("Login successful:", user);
+
+        // Redirect based on role
         switch (user.role) {
-          case 'admin':
-            navigate('/dashboard/admin');
+          case "admin":
+            navigate("/dashboard/admin");
             break;
-          case 'student':
-            navigate('/dashboard/student');
+          case "student":
+            navigate("/dashboard/student");
             break;
-          case 'organizer':
-            navigate('/dashboard/organizer');
+          case "organizer":
+            navigate("/dashboard/organizer");
             break;
           default:
-            navigate('/unauthorized');
+            navigate("/unauthorized");
         }
-
       } else {
-        // Login failed - show error
-        setError(result.error || 'Login failed');
+        setError(result.error || "Login failed");
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError("Network error. Please try again.");
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px' }}>
+    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "20px" }}>
       <h2>Login to OneHub</h2>
-      
+
       {error && (
-        <div style={{ color: 'red', marginBottom: '10px', padding: '10px', backgroundColor: '#ffe6e6', border: '1px solid red' }}>
+        <div
+          style={{
+            color: "red",
+            marginBottom: "10px",
+            padding: "10px",
+            backgroundColor: "#ffe6e6",
+            border: "1px solid red",
+          }}
+        >
           {error}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
+        <div style={{ marginBottom: "15px" }}>
           <label>User ID:</label>
           <input
             type="text"
@@ -78,12 +83,12 @@ const Login = () => {
             value={formData.user_id}
             onChange={handleChange}
             required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            style={{ width: "100%", padding: "8px", marginTop: "5px" }}
             placeholder="Enter your user ID (e.g., S101, O101)"
           />
         </div>
-        
-        <div style={{ marginBottom: '15px' }}>
+
+        <div style={{ marginBottom: "15px" }}>
           <label>Password:</label>
           <input
             type="password"
@@ -91,28 +96,28 @@ const Login = () => {
             value={formData.password}
             onChange={handleChange}
             required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            style={{ width: "100%", padding: "8px", marginTop: "5px" }}
             placeholder="Enter your password"
           />
         </div>
-        
-        <button 
-          type="submit" 
+
+        <button
+          type="submit"
           disabled={loading}
-          style={{ 
-            width: '100%', 
-            padding: '10px', 
-            backgroundColor: loading ? '#ccc' : '#007bff', 
-            color: 'white', 
-            border: 'none', 
-            cursor: loading ? 'not-allowed' : 'pointer' 
+          style={{
+            width: "100%",
+            padding: "10px",
+            backgroundColor: loading ? "#ccc" : "#007bff",
+            color: "white",
+            border: "none",
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-      
-      <p style={{ textAlign: 'center', marginTop: '20px' }}>
+
+      <p style={{ textAlign: "center", marginTop: "20px" }}>
         Don't have an account? <a href="/register">Register here</a>
       </p>
     </div>

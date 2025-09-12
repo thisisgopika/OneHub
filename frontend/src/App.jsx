@@ -4,53 +4,22 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import authService from './services/authService.js';
 
+// Dashboards
 import AdminDashboard from './components/admin/Dashboard.jsx';
-import StudentDashboard from './components/student/Dashboard.jsx';
+import StudentDashboard from './components/student/StudentDashboard.jsx';
 import OrganizerDashboard from './components/organizer/Dashboard.jsx';
 
+// Organizer
 import CreateEvent from './components/organizer/CreateEvent.jsx' ;
 import VolunteerApproval from './components/organizer/VolunteerApproval.jsx';
 import EventReport from './components/organizer/EventReport.jsx';
 import ManageEvents from './components/organizer/ManageEvents.jsx';
 import EventDetails from './components/organizer/pages/EventDetails.jsx';
 
-// Simple Dashboard component for testing
-/*
-const Dashboard = () => {
-  const user = authService.getCurrentUser();
-  
-  const handleLogout = () => {
-    authService.logout();
-    window.location.href = '/login';
-  };
-
-  return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>Welcome to OneHub Dashboard!</h1>
-      {user && (
-        <div>
-          <h3>Hello, {user.name}!</h3>
-          <p>User ID: {user.user_id}</p>
-          <p>Role: {user.role}</p>
-          <p>Email: {user.email}</p>
-        </div>
-      )}
-      <button 
-        onClick={handleLogout}
-        style={{ 
-          padding: '10px 20px', 
-          backgroundColor: '#dc3545', 
-          color: 'white', 
-          border: 'none', 
-          cursor: 'pointer',
-          marginTop: '20px'
-        }}
-      >
-        Logout
-      </button>
-    </div>
-  );
-}; */
+// Student pages
+import MyEvents from './components/student/MyEvents.jsx';
+import MyReports from './components/student/MyReports.jsx';
+import Notifications from './components/student/Notifications.jsx';
 
 // Unauthorized page
 const Unauthorized = () => (
@@ -62,15 +31,18 @@ const Unauthorized = () => (
 
 // Protected Route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
-
   const isAuthenticated = authService.isAuthenticated();
-
   const user = authService.getCurrentUser();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" />;
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return children;
 };
 
 function App() {
@@ -81,7 +53,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         
-          {/* Role-Specific Dashboards */}
+          {/* Admin Dashboard */}
           <Route
             path="/dashboard/admin"
             element={
@@ -91,15 +63,41 @@ function App() {
             }
           />
 
+          {/* Student Routes */}
           <Route
             path="/dashboard/student"
             element={
-              <ProtectedRoute  allowedRoles={['student']}>
+              <ProtectedRoute allowedRoles={['student']}>
                 <StudentDashboard />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/dashboard/student/events"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <MyEvents />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/student/reports"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <MyReports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/student/notifications"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
 
+          {/* Organizer Routes */}
           <Route
             path="/dashboard/organizer"
             element={
@@ -108,7 +106,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Nested route for creating events */}
           <Route
             path="/dashboard/organizer/create"
             element={
@@ -117,7 +114,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Nested route for volunteer approval */}
           <Route
             path="/dashboard/organizer/volunteer_approval"
             element={
@@ -126,7 +122,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Nested route for Event report */}
           <Route
             path="/dashboard/organizer/event_report"
             element={
@@ -152,6 +147,7 @@ function App() {
             }
           />
 
+          {/* Unauthorized page */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 
           {/* Default redirect */}
@@ -165,7 +161,6 @@ function App() {
               )
             }
           />
-
         </Routes>
       </div>
     </Router>
