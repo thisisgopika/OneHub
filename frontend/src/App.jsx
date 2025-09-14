@@ -9,6 +9,12 @@ import AdminDashboard from './components/admin/Dashboard.jsx';
 import StudentDashboard from './components/student/StudentDashboard.jsx';
 import OrganizerDashboard from './components/organizer/Dashboard.jsx';
 
+// admin new imports here
+import AdminClasses from './pages/AdminClasses.jsx';
+import ClassDashboard from './pages/ClassDashboard.jsx';
+import ReportsTable from './pages/ReportsTable.jsx';
+import SystemOverview from './pages/SystemOverview.jsx';
+
 // Organizer
 import CreateEvent from './components/organizer/CreateEvent.jsx' ;
 import VolunteerApproval from './components/organizer/VolunteerApproval.jsx';
@@ -59,6 +65,40 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/classes"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminClasses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/classes/:className/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ClassDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/classes/:className/report"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ReportsTable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/system-stats"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <SystemOverview />
               </ProtectedRoute>
             }
           />

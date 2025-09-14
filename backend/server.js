@@ -1,3 +1,4 @@
+import adminRoutes from './routes/admin.js';
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -27,7 +28,8 @@ app.use(express.json());
 // ✅ Routes
 app.use("/api/events", eventRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/auth", authRoutes);  // 👈 now safe
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes); // Your new route here!
 
 const PORT = process.env.PORT || 5000;
 
