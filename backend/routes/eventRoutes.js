@@ -9,7 +9,7 @@ import {
   updateEvent,
   deleteEvent,
   getEventByID,
-  getAllEvents
+  getAllEvents,
 } from '../controllers/eventController.js';
 
 // Student controllers
@@ -20,7 +20,10 @@ import {
 } from '../controllers/registrationController.js';
 import {
   applyVolunteer,
-  getVolunteersByUser
+  getVolunteersByUser,
+  getEventVolunteers,
+  acceptVolunteer,
+  rejectVolunteer
 } from '../controllers/volunteerController.js';
 import {
   getNotificationsByUser,
@@ -37,6 +40,9 @@ router.get('/organizer', authMiddleware, getOrganizerEvents);
 router.get('/:id/report', authMiddleware, getEventReport);
 router.put('/:id', authMiddleware, updateEvent);
 router.delete('/:id', authMiddleware, deleteEvent);
+router.get('/:id/volunteers', authMiddleware, getEventVolunteers);
+router.put('/volunteers/:id/accept', authMiddleware, acceptVolunteer);  
+router.put('/volunteers/:id/reject', authMiddleware, rejectVolunteer);
 
 // ==============================
 // Student Routes

@@ -16,7 +16,7 @@ const volunteerService = {
   // 2️⃣ Accept a volunteer
   acceptVolunteer: async (appId) => {
     try {
-      const response = await api.put(`/volunteers/${appId}/accept`, {});
+      const response = await api.put(`/events/volunteers/${appId}/accept`, {});
       return { success: true, data: response };
     } catch (error) {
       return { success: false, error: error.message };
@@ -26,7 +26,7 @@ const volunteerService = {
   // 3️⃣ Reject a volunteer
   rejectVolunteer: async (appId) => {
     try {
-      const response = await api.put(`/volunteers/${appId}/reject`, {});
+      const response = await api.put(`/events/volunteers/${appId}/reject`, {});
       return { success: true, data: response };
     } catch (error) {
       return { success: false, error: error.message };

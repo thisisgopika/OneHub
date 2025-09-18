@@ -19,7 +19,7 @@ const eventService = {
     try {
       //const user = authService.getCurrentUser();
       //const user_id = user.user_id;
-      const response = await api.get(`/events`);
+      const response = await api.get(`/events/organizer`);
       console.log(response);
       // Make sure response.events exists
       return { success: true, data: response.events || [] };

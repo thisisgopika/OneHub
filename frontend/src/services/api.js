@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL || 'https://your-backend-will-go-here.com/api'
+  : 'http://localhost:5000/api';
 
 import authService from './authService.js'; // Add this import
 
