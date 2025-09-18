@@ -15,7 +15,10 @@ const app = express();
 // ✅ Allow frontend (Vite on 5173) to call backend (5000)
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://onehub-campus-bm7pwh5d5-thisisgopikas-projects.vercel.app"
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
