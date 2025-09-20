@@ -5,11 +5,17 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-// Use DATABASE_URL for production (Render), individual vars for local development
+// Use DATABASE_URL for production, individual vars for local development
 const pool = process.env.DATABASE_URL 
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: { rejectUnauthorized: false },
+      // Force IPv4 and add connection settings
+      host: 'db.jlnsedtqkhyhmascvvca.supabase.co',
+      port: 5432,
+      user: 'postgres',
+      password: 'teamonehub@123',
+      database: 'postgres'
     })
   : new Pool({
       host: process.env.DB_HOST || "localhost",
