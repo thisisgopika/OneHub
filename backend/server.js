@@ -17,7 +17,9 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://onehub-campus-bm7pwh5d5-thisisgopikas-projects.vercel.app"
+      "https://onehub-campus-bm7pwh5d5-thisisgopikas-projects.vercel.app",
+      "https://one-hub-pearl.vercel.app",
+      "https://one-g7ocu67go-thisisgopikas-projects.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
