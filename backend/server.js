@@ -30,6 +30,9 @@ app.use(
 // ✅ Parse JSON
 app.use(express.json());
 
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend is working!' });
+});
 // ✅ Routes
 app.use("/api/events", eventRoutes);
 app.use("/api/users", userRoutes);
