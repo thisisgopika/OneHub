@@ -13,7 +13,7 @@ const api = {
       token = authService.getToken();
     }
     
-    if (token) {
+    if (token) {gig
       headers.Authorization = `Bearer ${token}`;
     }
     
