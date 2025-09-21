@@ -5,11 +5,12 @@ import { getVolunteersByUser } from "../controllers/volunteerController.js";
 import { getNotificationsByUser, markNotificationRead } from "../controllers/notificationController.js";
 import pool from "../config/database.js";
 // Add this route after the imports
+
+const router = express.Router();
+
 router.get("/", (req, res) => {
   res.json({ message: "Users API working" });
 });
-
-const router = express.Router();
 
 
 // ==============================
