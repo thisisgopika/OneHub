@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import eventService from '../../services/eventService.js';
 import authService from '../../services/authService.js';
+import '../../styles/Reports.css';
 
 export default function EventReport() {
   const [events, setEvents] = useState([]);          // Organizer's events
@@ -77,51 +78,63 @@ export default function EventReport() {
   }, [selectedEventId]);
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '50px auto', padding: '20px' }}>
-      <h2>Event Reports</h2>
-      <hr style={{ margin: '30px 0' }} />
-      {/* Loading and Error Handling */}
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {/* Dropdown to select an event */}
-      {events.length > 0 ? (
-        <div style={{ marginBottom: '20px' }}>
-          <label htmlFor="eventSelect" style={{ display: 'block', marginBottom: '8px' }}>
-            Select an Event:
-          </label>
-          <select
-            id="eventSelect"
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              backgroundColor: 'white'
-            }}
-          >
-            <option value="">-- Choose an Event --</option>
-            {events.map((event) => (
-              <option key={event.event_id} value={event.event_id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
+    <div className="reports-page">
+      <div className="reports-container">
+        <div className="reports-header">
+          <h2 className="reports-title">Event Reports</h2>
+          <p className="reports-subtitle">Review participation and volunteer stats for your events.</p>
         </div>
-      ) : (
-        !loading && <p>No events found.</p>
-      )}
 
-      {/* Display the report */}
-      {selectedEventId && report && (
-        <div style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9' }}>
-          <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>Event Report</h3>
-          <p><strong>Total Attendees:</strong> {report.total_attendees ?? 0}</p>
-          <p><strong>Total Volunteers:</strong> {report.total_volunteers ?? 0}</p>
-        </div>
-      )}
+        {loading && <p className="text-muted">Loading...</p>}
+        {error && <p className="text-error">{error}</p>}
+
+        {events.length > 0 ? (
+          <div className="report-card">
+            <div className="report-card-header">
+              <div className="report-card-title">Select an Event</div>
+              <div className="accent-badge">{events.length} available</div>
+            </div>
+            <div className="report-controls">
+              <label htmlFor="eventSelect" className="text-muted" style={{ display: 'block', marginBottom: '8px' }}>
+                Event
+              </label>
+              <select
+                id="eventSelect"
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+                className="select-control"
+              >
+                <option value="">-- Choose an Event --</option>
+                {events.map((event) => (
+                  <option key={event.event_id} value={event.event_id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ) : (
+          !loading && <p className="text-muted">No events found.</p>
+        )}
+
+        {selectedEventId && report && (
+          <div className="report-card">
+            <div className="report-card-header">
+              <div className="report-card-title">Overview</div>
+            </div>
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <div className="kpi-number">{report.total_attendees ?? 0}</div>
+                <div className="kpi-label">Total Attendees</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-number">{report.total_volunteers ?? 0}</div>
+                <div className="kpi-label">Total Volunteers</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

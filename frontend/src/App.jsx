@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage from './pages/LandingPage.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import authService from './services/authService.js';
@@ -56,6 +57,7 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         
@@ -190,14 +192,14 @@ function App() {
           {/* Unauthorized page */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Default redirect */}
+          {/* Authenticated user redirect */}
           <Route
-            path="/"
+            path="/home"
             element={
               authService.isAuthenticated() ? (
                 <Navigate to={`/dashboard/${authService.getCurrentUser().role}`} />
               ) : (
-                <Navigate to="/login" />
+                <Navigate to="/" />
               )
             }
           />

@@ -1,0 +1,178 @@
+/* MyEvents Tab Interface - Dark theme + #ff6b35 accent */
+
+.my-events-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.my-events-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.my-events-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.my-events-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 132, 87, 0.2) 100%);
+  color: #ff6b35;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+}
+
+.tab-count {
+  background: rgba(255, 107, 53, 0.18);
+  color: #ff6b35;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+.tab-button.active .tab-count {
+  background: rgba(255, 107, 53, 0.3);
+  color: #ffffff;
+}
+
+/* Tab Content */
+.tab-content {
+  position: relative;
+  min-height: 400px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Status badges */
+.status-confirmed {
+  background: rgba(34, 197, 94, 0.16);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.32);
+}
+
+.status-pending {
+  background: rgba(255, 193, 7, 0.16);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.32);
+}
+
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.32);
+}
+
+/* Typography */
+.my-events h2,
+.my-events h3,
+.my-events h4 {
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.my-events p,
+.my-events .registration-meta,
+.my-events .empty-description {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Cards */
+.my-events .registration-item {
+  background: rgba(20, 20, 25, 0.7);
+  backdrop-filter: blur(16px);
+}
+
+.my-events .registration-item:hover {
+  border-color: rgba(255, 107, 53, 0.35);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .my-events-title {
+    font-size: 2rem;
+  }
+  
+  .tab-navigation {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .tab-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-events-container {
+    padding: 0 1rem;
+  }
+  
+  .my-events-title {
+    font-size: 1.8rem;
+  }
+  
+  .tab-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}

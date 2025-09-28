@@ -1,0 +1,76 @@
+/* Student Navigation Styles */
+.student-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 2rem;
+  border-radius: 12px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-link:hover {
+  background: rgba(255, 60, 31, 0.1);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, rgba(255, 60, 31, 0.2) 0%, rgba(255, 95, 64, 0.2) 100%);
+  color: #ff3c1f;
+  border: 1px solid rgba(255, 60, 31, 0.3);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  bottom: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: linear-gradient(135deg, #ff3c1f 0%, #ff5f40 100%);
+  border-radius: 50%;
+}
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-nav {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-nav {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .nav-link {
+    width: 100%;
+    justify-content: center;
+  }
+}
