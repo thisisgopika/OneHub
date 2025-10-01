@@ -1,4 +1,6 @@
-const API_BASE_URL = 'https://onehub-q86m.onrender.com/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://onehub-q86m.onrender.com/api'
+  : 'http://localhost:5000/api';
 
 import authService from './authService.js'; // Add this import
 

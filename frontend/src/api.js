@@ -1,6 +1,11 @@
 import axios from "axios";
+
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://onehub-q86m.onrender.com/api'
+  : 'http://localhost:5000/api';
+
 const API = axios.create({
-  baseURL: "https://onehub-q86m.onrender.com/api",
+  baseURL: API_BASE_URL,
 });
 
 API.interceptors.request.use((req) => {
