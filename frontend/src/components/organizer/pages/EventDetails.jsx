@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import eventService from '../../../services/eventService.js';
+import OrganizerSidebarNav from '../OrganizerSidebarNav';
+import eventService from '../../../services/eventService';
+import '../../../styles/StudentDashboard.css';
+import '../../../styles/OrganizerDashboard.css';
 
-export default function EventManage() {
+export default function EventDetails() {
   const { eventId } = useParams();
   const navigate = useNavigate();
-
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Form fields
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -22,7 +23,6 @@ export default function EventManage() {
     max_participants: '',
   });
 
-  /** Fetch event details */
   const fetchEvent = async () => {
     setLoading(true);
     try {
@@ -53,13 +53,11 @@ export default function EventManage() {
     fetchEvent();
   }, [eventId]);
 
-  /** Handle form changes */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /** Save updated event */
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -76,14 +74,13 @@ export default function EventManage() {
     }
   };
 
-  /** Delete event */
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this event?')) return;
     try {
       const response = await eventService.deleteEvent(eventId);
       if (response.success) {
         alert('Event deleted successfully!');
-        navigate(-1); // Redirect after delete
+        navigate('/dashboard/organizer/events');
       } else {
         alert(response.error || 'Failed to delete event');
       }
@@ -92,154 +89,103 @@ export default function EventManage() {
     }
   };
 
-  if (loading) return <p>Loading event details...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
-  if (!event) return null;
-
   return (
-    <div
-      style={{
-        maxWidth: '800px',
-        margin: '50px auto',
-        padding: '20px',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        background: '#f9f9f9',
-      }}
-    >
-      <h2>{isEditing ? 'Edit Event' : `Event Details: ${event.name}`}</h2>
-      <hr style={{ margin: '30px 0' }} />
+    <div className="student-dashboard">
+      <button className="mobile-menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+      
+      <OrganizerSidebarNav isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* VIEW MODE */}
-      {!isEditing ? (
-        <>
-          <p><strong>Description:</strong> {event.description || 'No description'}</p>
-          <p><strong>Date:</strong> {new Date(event.date).toLocaleDateString()}</p>
-          <p><strong>Venue:</strong> {event.venue}</p>
-          <p><strong>Category:</strong> {event.category || 'N/A'}</p>
-          <p><strong>Deadline:</strong> {new Date(event.deadline).toLocaleDateString()}</p>
-          <p><strong>Max Participants:</strong> {event.max_participants}</p>
-          <p><strong>Created At:</strong> {new Date(event.created_at).toLocaleString()}</p>
+      <div className="main-content">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">{isEditing ? 'Edit Event' : event?.name || 'Event Details'}</h1>
+          <p className="dashboard-subtitle">{isEditing ? 'Update event information' : 'View and manage event'}</p>
+        </div>
 
-          {/* Actions */}
-          <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'right' }}>
-            <button
-              onClick={() => setIsEditing(true)}
-              style={{ padding: '10px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
-            >
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              style={{ padding: '10px 20px', background: 'red', color: 'white', border: 'none', borderRadius: '4px' }}
-            >
-              Delete
-            </button>
-          </div>
-        </>
-      ) : (
-        /* EDIT MODE */
-        <form onSubmit={handleSave}>
-          <div style={{ marginBottom: '15px' }}>
-            <label>Event Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
+        <div className="dashboard-section">
+          {loading && <div className="loading-state"><div className="loading-spinner"></div><p>Loading...</p></div>}
+          {error && <div className="empty-state"><div className="empty-description" style={{color: '#ef4444'}}>{error}</div></div>}
 
-          <div style={{ marginBottom: '15px' }}>
-            <label>Description:</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4"
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label>Date:</label>
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label>Venue:</label>
-            <input
-              type="text"
-              name="venue"
-              value={formData.venue}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label>Category:</label>
-            <input
-              type="text"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label>Deadline:</label>
-            <input
-              type="date"
-              name="deadline"
-              value={formData.deadline}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label>Max Participants:</label>
-            <input
-              type="number"
-              name="max_participants"
-              value={formData.max_participants}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            />
-          </div>
-
-          {/* Form buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <button
-              type="submit"
-              style={{ padding: '10px 20px', background: 'green', color: 'white', border: 'none', borderRadius: '4px' }}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px' }}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+          {!loading && !error && event && (
+            <>
+              {!isEditing ? (
+                <div className="event-form">
+                  <div className="form-group">
+                    <label>Description</label>
+                    <p style={{color: 'rgba(255,255,255,0.8)'}}>{event.description || 'No description'}</p>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Event Date</label>
+                      <p style={{color: 'rgba(255,255,255,0.8)'}}>{new Date(event.date).toLocaleDateString()}</p>
+                    </div>
+                    <div className="form-group">
+                      <label>Deadline</label>
+                      <p style={{color: 'rgba(255,255,255,0.8)'}}>{new Date(event.deadline).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Venue</label>
+                      <p style={{color: 'rgba(255,255,255,0.8)'}}>{event.venue}</p>
+                    </div>
+                    <div className="form-group">
+                      <label>Category</label>
+                      <p style={{color: 'rgba(255,255,255,0.8)'}}>{event.category || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Max Participants</label>
+                    <p style={{color: 'rgba(255,255,255,0.8)'}}>{event.max_participants}</p>
+                  </div>
+                  <div className="form-actions">
+                    <button onClick={() => setIsEditing(true)} className="btn btn-primary">Edit Event</button>
+                    <button onClick={handleDelete} className="btn btn-delete" style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)'}}>Delete Event</button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSave} className="event-form">
+                  <div className="form-group">
+                    <label>Event Name</label>
+                    <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea name="description" value={formData.description} onChange={handleChange} rows="4" />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Event Date</label>
+                      <input type="date" name="date" value={formData.date} onChange={handleChange} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Deadline</label>
+                      <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} required />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Venue</label>
+                      <input type="text" name="venue" value={formData.venue} onChange={handleChange} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Category</label>
+                      <input type="text" name="category" value={formData.category} onChange={handleChange} />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Max Participants</label>
+                    <input type="number" name="max_participants" value={formData.max_participants} onChange={handleChange} required />
+                  </div>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary">Save Changes</button>
+                    <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

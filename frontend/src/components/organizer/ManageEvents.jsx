@@ -1,21 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import eventService from '../../services/eventService.js'; // Import your eventService
+import OrganizerSidebarNav from './OrganizerSidebarNav';
+import eventService from '../../services/eventService';
+import '../../styles/StudentDashboard.css';
+import '../../styles/OrganizerDashboard.css';
 
 export default function ManageEvents() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch events on mount
   useEffect(() => {
     const getOrganizerEvents = async () => {
       setLoading(true);
       try {
         const response = await eventService.getOrganizerEvents();
         if (response.success) {
-          setEvents(response.data || []); // adjust based on your API shape
+          setEvents(response.data || []);
           setError(null);
         } else {
           setError(response.error || 'Failed to fetch events');
@@ -30,60 +33,110 @@ export default function ManageEvents() {
     getOrganizerEvents();
   }, []);
 
-  // Handle Edit button click
   const handleDetails = (eventId) => {
     navigate(`/dashboard/organizer/events/${eventId}`);
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '50px auto', padding: '20px' }}>
-      <h2>Manage Events</h2>
-      <hr style={{ margin: '30px 0' }} />
-      {loading && <p>Loading events...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="student-dashboard">
+      <button
+        className="mobile-menu-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        ☰
+      </button>
 
-      {!loading && !error && events.length === 0 && <p>No events found.</p>}
+      <OrganizerSidebarNav
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {!loading && !error && events.length > 0 && (
-        <table style={{ margin: '20px auto', borderCollapse: 'collapse', width: '80%' }}>
-          <thead>
-            <tr>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>ID</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Name</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Deadline</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Registrations</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Volunteers</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((event) => (
-              <tr key={event.event_id}>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.event_id}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.name}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{new Date(event.deadline).toLocaleString()}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.reg_count}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.vol_count}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                  <button
-                    onClick={() => handleDetails(event.event_id)}
-                    style={{
-                      padding: '5px 30px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    View
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <div className="main-content">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Manage Events</h1>
+          <p className="dashboard-subtitle">View and manage all your events</p>
+        </div>
+
+        <div className="dashboard-section">
+          {loading && (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading events...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="empty-state">
+              <div className="empty-title">Error</div>
+              <div className="empty-description" style={{ color: '#ef4444' }}>
+                {error}
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && events.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-title">No Events Found</div>
+              <div className="empty-description">
+                Create your first event to get started
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/organizer/create')}
+                className="btn btn-primary"
+                style={{ marginTop: '1rem' }}
+              >
+                Create Event
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && events.length > 0 && (
+            <div className="events-table-container">
+              <table className="events-table">
+                <thead>
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Deadline</th>
+                    <th>Registrations</th>
+                    <th>Volunteers</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((event) => (
+                    <tr key={event.event_id}>
+                      <td className="event-name-cell">{event.name}</td>
+                      <td>{formatDate(event.deadline)}</td>
+                      <td>{event.reg_count || 0}</td>
+                      <td>{event.vol_count || 0}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            onClick={() => handleDetails(event.event_id)}
+                            className="btn-action btn-view"
+                          >
+                            View Details
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
