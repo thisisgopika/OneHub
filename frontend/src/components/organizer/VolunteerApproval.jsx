@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import volunteerService from '../../services/volunteerService.js';
-import eventService from '../../services/eventService.js';
-import authService from '../../services/authService.js';
+import { useEffect, useState } from 'react';
+import OrganizerSidebarNav from './OrganizerSidebarNav';
+import volunteerService from '../../services/volunteerService';
+import eventService from '../../services/eventService';
+import authService from '../../services/authService';
+import '../../styles/StudentDashboard.css';
+import '../../styles/OrganizerDashboard.css';
 
-/** VolunteerTable component */
-export function VolunteerTable({ eventId }) {
+function VolunteerTable({ eventId }) {
   const [volunteers, setVolunteers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,8 +15,6 @@ export function VolunteerTable({ eventId }) {
     setLoading(true);
     try {
       const response = await volunteerService.getEventVolunteers(eventId);
-      console.log('Volunteers response:', response);
-
       if (response.success) {
         setVolunteers(response.data);
         setError(null);
@@ -30,12 +30,12 @@ export function VolunteerTable({ eventId }) {
 
   const handleAccept = async (appId) => {
     await volunteerService.acceptVolunteer(appId);
-    fetchVolunteers(); // refresh table
+    fetchVolunteers();
   };
 
   const handleReject = async (appId) => {
     await volunteerService.rejectVolunteer(appId);
-    fetchVolunteers(); // refresh table
+    fetchVolunteers();
   };
 
   useEffect(() => {
@@ -44,65 +44,68 @@ export function VolunteerTable({ eventId }) {
     }
   }, [eventId]);
 
-  if (loading) return <p>Loading volunteers...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
-  if (volunteers.length === 0) return <p style={{ textAlign: 'center' }}>No volunteer applications found.</p>;
+  if (loading) return <div className="loading-state"><p>Loading volunteers...</p></div>;
+  if (error) return <div className="empty-state"><div className="empty-description" style={{ color: '#ef4444' }}>{error}</div></div>;
+  if (volunteers.length === 0) return <div className="empty-state"><div className="empty-title">No Applications</div><div className="empty-description">No volunteer applications found for this event</div></div>;
 
   return (
-    <div style = {{padding: '10px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9'}}>
-    <table style={{ margin: '20px auto', borderCollapse: 'collapse', width: '80%' }}>
-      <thead>
-        <tr>
-          <th style={{ border: '1px solid #ccc', padding: '8px' }}>Name</th>
-          <th style={{ border: '1px solid #ccc', padding: '8px' }}>Class</th>
-          <th style={{ border: '1px solid #ccc', padding: '8px' }}>Semester</th>
-          <th style={{ border: '1px solid #ccc', padding: '8px' }}>Status</th>
-          <th style={{ border: '1px solid #ccc', padding: '8px' }}>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {volunteers.map((vol) => (
-          <tr key={vol.app_id}>
-            <td style={{ border: '1px solid #ccc', padding: '8px' }}>{vol.name}</td>
-            <td style={{ border: '1px solid #ccc', padding: '8px' }}>{vol["class"]}</td>
-            <td style={{ border: '1px solid #ccc', padding: '8px' }}>{vol.semester}</td>
-            <td style={{ border: '1px solid #ccc', padding: '8px' }}>{vol.status}</td>
-            <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-              {vol.status === 'pending' ? (
-                <>
-                  <button
-                    onClick={() => handleAccept(vol.app_id)}
-                    style={{ marginRight: '10px', padding: '5px 10px', background: 'green', color: 'white', border: 'none', borderRadius: '4px' }}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => handleReject(vol.app_id)}
-                    style={{ padding: '5px 10px', background: 'red', color: 'white', border: 'none', borderRadius: '4px' }}
-                  >
-                    Reject
-                  </button>
-                </>
-              ) : (
-                <span>{vol.status}</span>
-              )}
-            </td>
+    <div className="events-table-container">
+      <table className="events-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Semester</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {volunteers.map((vol) => (
+            <tr key={vol.app_id}>
+              <td className="event-name-cell">{vol.name}</td>
+              <td>{vol["class"]}</td>
+              <td>{vol.semester}</td>
+              <td>
+                <span className={`status-badge status-${vol.status}`}>
+                  {vol.status}
+                </span>
+              </td>
+              <td>
+                {vol.status === 'pending' ? (
+                  <div className="action-buttons">
+                    <button
+                      onClick={() => handleAccept(vol.app_id)}
+                      className="btn-action btn-approve"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleReject(vol.app_id)}
+                      className="btn-action btn-delete"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                ) : (
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{vol.status}</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-/** OrganizerVolunteers component */
-export default function OrganizerVolunteers() {
+export default function VolunteerApproval() {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  /** Fetch organizer's events */
   const fetchOrganizerEvents = async () => {
     try {
       const user = authService.getCurrentUser();
@@ -115,7 +118,6 @@ export default function OrganizerVolunteers() {
       }
 
       const response = await eventService.getOrganizerEvents(organizerId);
-      console.log('Events response:', response);
 
       if (response.success && Array.isArray(response.data)) {
         setEvents(response.data);
@@ -135,49 +137,68 @@ export default function OrganizerVolunteers() {
   }, []);
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '50px auto', padding: '20px' }}>
-      <h2>Volunteer Approval</h2>
-      <hr style={{ margin: '30px 0' }} />
-      {/* Loading and Error Messages */}
-      {loading && <p>Loading events...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="student-dashboard">
+      <button
+        className="mobile-menu-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        ☰
+      </button>
 
-      {/* Dropdown for selecting event */}
-      {events.length > 0 ? (
-        <div style={{ marginBottom: '20px' }}>
-          <label htmlFor="eventSelect" style={{ display: 'block', marginBottom: '8px' }}>
-            Select an Event:
-          </label>
-          <select
-            id="eventSelect"
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              backgroundColor: 'white',
-            }}
-          >
-            <option value="">-- Choose an Event --</option>
-            {events.map((event) => (
-              <option key={event.event_id} value={event.event_id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : (
-        !loading && <p>No events found for this organizer.</p>
-      )}
+      <OrganizerSidebarNav
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {/* Show volunteers for selected event */}
-      {selectedEventId && (
-        <div style={{ marginTop: '30px' }}>
-          <VolunteerTable eventId={selectedEventId} />
+      <div className="main-content">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Volunteer Management</h1>
+          <p className="dashboard-subtitle">Review and approve volunteer applications</p>
         </div>
-      )}
+
+        <div className="dashboard-section">
+          {loading && (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading events...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="empty-state">
+              <div className="empty-description" style={{ color: '#ef4444' }}>{error}</div>
+            </div>
+          )}
+
+          {!loading && !error && events.length > 0 && (
+            <>
+              <div className="form-group" style={{ marginBottom: '2rem' }}>
+                <label>Select Event</label>
+                <select
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                >
+                  <option value="">-- Choose an Event --</option>
+                  {events.map((event) => (
+                    <option key={event.event_id} value={event.event_id}>
+                      {event.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedEventId && <VolunteerTable eventId={selectedEventId} />}
+            </>
+          )}
+
+          {!loading && !error && events.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-title">No Events Found</div>
+              <div className="empty-description">Create events to manage volunteers</div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

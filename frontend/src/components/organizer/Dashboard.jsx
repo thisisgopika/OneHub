@@ -1,146 +1,126 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import Dashboard from '../common/Dashboard.jsx';
-import eventService from '../../services/eventService.js'; // Import your eventService
+import { useEffect, useState } from "react";
+import OrganizerSidebarNav from "./OrganizerSidebarNav.jsx";
+import EventCard from "../student/EventCard.jsx";
+import "../../styles/StudentDashboard.css"; // Reuse student dashboard styles
+
+import API from "../../api";
+import authService from "../../services/authService";
 
 export default function OrganizerDashboard() {
-  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    totalRegistrations: 0,
+    pendingVolunteers: 0,
+    upcomingEvents: 0,
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const handleCreate = () => {
-    navigate('/dashboard/organizer/create'); // relative path
-  };
+  const user = authService.getCurrentUser();
 
-  const handleVolunteer = () =>{
-    navigate('/dashboard/organizer/volunteer_approval');
-  }
-
-  const handleReports = () =>{
-    navigate('/dashboard/organizer/event_report');
-  }
-
-  const handleEvents = () =>{
-    navigate('/dashboard/organizer/events');
-  }
-
-  // Fetch events on mount
   useEffect(() => {
-    const getOrganizerEvents = async () => {
-      setLoading(true);
+    const fetchData = async () => {
       try {
-        const response = await eventService.getOrganizerEvents();
-        if (response.success) {
-          setEvents(response.data || []); // adjust based on your API shape
-          setError(null);
-        } else {
-          setError(response.error || 'Failed to fetch events');
-        }
+        // Fetch events
+        const eventsRes = await API.get("/organizer/events");
+        setEvents(eventsRes.data.events || []);
+
+        // Fetch stats
+        const statsRes = await API.get("/organizer/stats");
+        setStats(statsRes.data || {});
       } catch (err) {
-        setError(err.message || 'Something went wrong');
+        console.error("Error fetching organizer dashboard data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    getOrganizerEvents();
+    fetchData();
   }, []);
 
-  // Filter out events whose deadlines have passed
-  const upcomingEvents = events.filter(event => new Date(event.deadline) >= new Date());
-
-
   return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>Organizer Dashboard</h1>
-      <hr style={{ margin: '30px 0' }} />
-      <Dashboard />
+    <div className="student-dashboard" style={{ minHeight: "100vh", background: "#1a1a1a" }}>
+      {/* Mobile Menu Toggle */}
       <button
-        onClick={handleCreate}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          marginTop: '20px'
-        }}
+        className="mobile-menu-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
       >
-        Create Event
-      </button>
-      <button
-        onClick={handleEvents}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          marginTop: '20px'
-        }}
-      >
-        Manage Events
-      </button>
-      <button
-        onClick={handleVolunteer}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          marginTop: '20px'
-        }}
-      >
-        Volunteers Approval
-      </button>
-      <button
-        onClick={handleReports}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          marginTop: '20px'
-        }}
-      >
-        Reports
+        ☰
       </button>
 
-      <hr style={{ margin: '30px 0' }} />
+      {/* Sidebar Navigation */}
+      <OrganizerSidebarNav
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <h2>Your Events</h2>
-      {loading && <p>Loading events...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {/* Main Content */}
+      <div className="main-content">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title" style={{ color: "#fff" }}>
+            Welcome, {user?.name || "Organizer"}!
+          </h1>
+          <p className="dashboard-subtitle" style={{ color: "#ccc" }}>
+            Manage your events and volunteers
+          </p>
+        </div>
 
-      {!loading && !error && upcomingEvents.length === 0 && <p>No events found.</p>}
+        {/* Stats Grid */}
+        <div className="dashboard-grid" style={{ marginBottom: "2rem" }}>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-title">Total Events</div>
+              <div className="stat-value">{stats.totalEvents}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-title">Total Registrations</div>
+              <div className="stat-value">{stats.totalRegistrations}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-title">Pending Volunteers</div>
+              <div className="stat-value">{stats.pendingVolunteers}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-title">Upcoming Events</div>
+              <div className="stat-value">{stats.upcomingEvents}</div>
+            </div>
+          </div>
+        </div>
 
-      {!loading && !error && upcomingEvents.length > 0 && (
-        <table style={{ margin: '20px auto', borderCollapse: 'collapse', width: '80%' }}>
-          <thead>
-            <tr>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>ID</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Name</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Deadline</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Registrations</th>
-              <th style={{ border: '1px solid #ccc', padding: '8px' }}>Volunteers</th>
-            </tr>
-          </thead>
-          <tbody>
-            {upcomingEvents.map((event) => (
-              <tr key={event.event_id}>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.event_id}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.name}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{new Date(event.deadline).toLocaleString()}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.reg_count}</td>
-                <td style={{ border: '1px solid #ccc', padding: '8px' }}>{event.vol_count}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {/* Events List */}
+        <div className="dashboard-section">
+          <div className="section-header">
+            <div className="section-title" style={{ color: "#fff" }}>
+              Your Events
+            </div>
+          </div>
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p style={{ color: "#fff" }}>Loading events...</p>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-title" style={{ color: "#fff" }}>No Events</div>
+              <div className="empty-description" style={{ color: "#ccc" }}>
+                Create a new event to get started!
+              </div>
+            </div>
+          ) : (
+            <div className="events-grid">
+              {events.map((event) => (
+                <EventCard
+                  key={event.event_id}
+                  event={event}
+                  isOrganizer={true}
+                  // Add organizer-specific props/actions if needed
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

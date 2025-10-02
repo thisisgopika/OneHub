@@ -8,7 +8,7 @@ import authService from './services/authService.js';
 // Dashboards
 import AdminDashboard from './components/admin/Dashboard.jsx';
 import StudentDashboard from './components/student/StudentDashboard.jsx';
-import OrganizerDashboard from './components/organizer/Dashboard.jsx';
+import OrganizerDashboard from './components/organizer/OrganizerDashboard.jsx';
 
 // admin new imports here
 import AdminClasses from './pages/AdminClasses.jsx';

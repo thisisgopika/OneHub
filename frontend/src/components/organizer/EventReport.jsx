@@ -1,19 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import eventService from '../../services/eventService.js';
-import authService from '../../services/authService.js';
-import '../../styles/Reports.css';
+import { useEffect, useState } from 'react';
+import OrganizerSidebarNav from './OrganizerSidebarNav';
+import eventService from '../../services/eventService';
+import authService from '../../services/authService';
+import API from '../../api';
+import '../../styles/StudentDashboard.css';
+import '../../styles/OrganizerDashboard.css';
 
 export default function EventReport() {
-  const [events, setEvents] = useState([]);          // Organizer's events
-  const [selectedEventId, setSelectedEventId] = useState(''); // Selected event
-  const [report, setReport] = useState(null);        // Report data
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [report, setReport] = useState(null);
+  const [volunteers, setVolunteers] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  /** Fetch all events created by the logged-in organizer */
   const fetchOrganizerEvents = async () => {
     try {
-      const user = authService.getCurrentUser(); // Logged-in organizer
+      const user = authService.getCurrentUser();
       const organizerId = user?.user_id;
 
       if (!organizerId) {
@@ -23,9 +27,7 @@ export default function EventReport() {
 
       setLoading(true);
       const response = await eventService.getOrganizerEvents(organizerId);
-      console.log('Fetched Events Response:', response);
 
-      // Response should be { success: true, data: [events] }
       if (response.success && Array.isArray(response.data)) {
         setEvents(response.data);
         setError(null);
@@ -33,107 +35,168 @@ export default function EventReport() {
         setError('Failed to fetch events.');
       }
     } catch (err) {
-      console.error('Error fetching organizer events:', err);
       setError(err.message || 'Something went wrong while fetching events.');
     } finally {
       setLoading(false);
     }
   };
 
-  /** Fetch report for a selected event */
   const fetchEventReport = async (eventId) => {
     if (!eventId) return;
 
     setLoading(true);
     try {
+      // Fetch report stats
       const result = await eventService.getEventReport(eventId);
-      console.log('Event Report Response:', result);
-
       if (result.success && result.data) {
         setReport(result.data);
-        setError(null);
-      } else {
-        setError(result.error || 'Failed to fetch report');
       }
+
+      // Fetch volunteers list using your actual endpoint
+      const volunteersRes = await API.get(`/events/${eventId}/volunteers`);
+      setVolunteers(volunteersRes.data.volunteers || []);
+
+      setError(null);
     } catch (err) {
-      console.error('Error fetching event report:', err);
+      console.error('Error:', err);
       setError(err.message || 'Something went wrong while fetching the report.');
     } finally {
       setLoading(false);
     }
   };
 
-  /** Fetch events on component mount */
   useEffect(() => {
     fetchOrganizerEvents();
   }, []);
 
-  /** Fetch report whenever a new event is selected */
   useEffect(() => {
     if (selectedEventId) {
       fetchEventReport(selectedEventId);
     } else {
-      setReport(null); // Clear when no event is selected
+      setReport(null);
+      setVolunteers([]);
     }
   }, [selectedEventId]);
 
   return (
-    <div className="reports-page">
-      <div className="reports-container">
-        <div className="reports-header">
-          <h2 className="reports-title">Event Reports</h2>
-          <p className="reports-subtitle">Review participation and volunteer stats for your events.</p>
+    <div className="student-dashboard">
+      <button
+        className="mobile-menu-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        ☰
+      </button>
+
+      <OrganizerSidebarNav
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      <div className="main-content">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Event Reports</h1>
+          <p className="dashboard-subtitle">Detailed participation breakdown</p>
         </div>
 
-        {loading && <p className="text-muted">Loading...</p>}
-        {error && <p className="text-error">{error}</p>}
+        <div className="dashboard-section">
+          {loading && (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading...</p>
+            </div>
+          )}
 
-        {events.length > 0 ? (
-          <div className="report-card">
-            <div className="report-card-header">
-              <div className="report-card-title">Select an Event</div>
-              <div className="accent-badge">{events.length} available</div>
+          {error && (
+            <div className="empty-state">
+              <div className="empty-description" style={{ color: '#ef4444' }}>{error}</div>
             </div>
-            <div className="report-controls">
-              <label htmlFor="eventSelect" className="text-muted" style={{ display: 'block', marginBottom: '8px' }}>
-                Event
-              </label>
-              <select
-                id="eventSelect"
-                value={selectedEventId}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-                className="select-control"
-              >
-                <option value="">-- Choose an Event --</option>
-                {events.map((event) => (
-                  <option key={event.event_id} value={event.event_id}>
-                    {event.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        ) : (
-          !loading && <p className="text-muted">No events found.</p>
-        )}
+          )}
 
-        {selectedEventId && report && (
-          <div className="report-card">
-            <div className="report-card-header">
-              <div className="report-card-title">Overview</div>
-            </div>
-            <div className="kpi-grid">
-              <div className="kpi-card">
-                <div className="kpi-number">{report.total_attendees ?? 0}</div>
-                <div className="kpi-label">Total Attendees</div>
+          {!loading && !error && events.length > 0 && (
+            <>
+              <div className="form-group" style={{ marginBottom: '2rem' }}>
+                <label>Select Event</label>
+                <select
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                >
+                  <option value="">-- Choose an Event --</option>
+                  {events.map((event) => (
+                    <option key={event.event_id} value={event.event_id}>
+                      {event.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="kpi-card">
-                <div className="kpi-number">{report.total_volunteers ?? 0}</div>
-                <div className="kpi-label">Total Volunteers</div>
-              </div>
+
+              {selectedEventId && report && (
+                <>
+                  {/* Stats Overview */}
+                  <div className="report-stats-grid">
+                    <div className="stat-card">
+                      <div className="stat-title">Total Attendees</div>
+                      <div className="stat-value">{report.total_attendees ?? 0}</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-title">Total Volunteers</div>
+                      <div className="stat-value">{volunteers.filter(v => v.status === 'accepted').length}</div>
+                    </div>
+                  </div>
+
+                  {/* Volunteers Table */}
+                  <div style={{ marginTop: '2rem' }}>
+                    <h3 style={{ color: '#fff', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                      Volunteer Applications
+                    </h3>
+                    {volunteers.length === 0 ? (
+                      <div className="empty-state">
+                        <div className="empty-description">No volunteer applications</div>
+                      </div>
+                    ) : (
+                      <div className="events-table-container">
+                        <table className="events-table">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>User ID</th>
+                              <th>Class</th>
+                              <th>Semester</th>
+                              <th>Status</th>
+                              <th>Applied On</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {volunteers.map((volunteer) => (
+                              <tr key={volunteer.app_id}>
+                                <td className="event-name-cell">{volunteer.name}</td>
+                                <td>{volunteer.user_id}</td>
+                                <td>{volunteer.class}</td>
+                                <td>{volunteer.semester}</td>
+                                <td>
+                                  <span className={`status-badge status-${volunteer.status}`}>
+                                    {volunteer.status}
+                                  </span>
+                                </td>
+                                <td>{volunteer.applied_date ? new Date(volunteer.applied_date).toLocaleDateString() : 'N/A'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {!loading && !error && events.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-title">No Events Found</div>
+              <div className="empty-description">Create events to view reports</div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
