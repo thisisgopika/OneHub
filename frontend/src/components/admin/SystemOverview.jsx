@@ -30,49 +30,6 @@ function SystemOverview() {
   fetchStats();
 }, []);
 
-  if (loading) {
-    return (
-      <div className="student-dashboard">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading system statistics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !stats) {
-    return (
-      <div className="student-dashboard">
-        <button 
-          className="mobile-menu-toggle"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          ☰
-        </button>
-
-        <AdminSidebarNav 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        <div className="main-content">
-          <div className="dashboard-header">
-            <h1 className="dashboard-title">System Overview</h1>
-            <p className="dashboard-subtitle">System statistics and metrics</p>
-          </div>
-          
-          <div className="empty-state">
-            <div className="empty-title">Unable to Load Data</div>
-            <div className="empty-description">
-              {error || "No system statistics available."}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="student-dashboard">
       <button 
@@ -90,33 +47,47 @@ function SystemOverview() {
       <div className="main-content">
         <div className="dashboard-header">
           <h1 className="dashboard-title">System Overview</h1>
-          <p className="dashboard-subtitle">Comprehensive system statistics and metrics</p>
+          <p className="dashboard-subtitle">System statistics and metrics</p>
         </div>
-
-        <div className="dashboard-section">
-          <div className="section-header">
-            <div className="section-title">System Statistics</div>
+        
+        {loading ? (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading system statistics...</p>
           </div>
-          
-          <div className="stats-table">
-            <div className="stats-table-row">
-              <div className="stats-table-label">Total Users</div>
-              <div className="stats-table-value">{stats.totalUsers || 'N/A'}</div>
-            </div>
-            <div className="stats-table-row">
-              <div className="stats-table-label">Total Events</div>
-              <div className="stats-table-value">{stats.totalEvents || 'N/A'}</div>
-            </div>
-            <div className="stats-table-row">
-              <div className="stats-table-label">Total Volunteers</div>
-              <div className="stats-table-value">{stats.totalVolunteers || 'N/A'}</div>
-            </div>
-            <div className="stats-table-row">
-              <div className="stats-table-label">Total Registrations</div>
-              <div className="stats-table-value">{stats.totalRegistrations || 'N/A'}</div>
+        ) : error || !stats ? (
+          <div className="empty-state">
+            <div className="empty-title">Unable to Load Data</div>
+            <div className="empty-description">
+              {error || "No system statistics available."}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="dashboard-section">
+            <div className="section-header">
+              <div className="section-title">System Statistics</div>
+            </div>
+            
+            <div className="stats-table">
+              <div className="stats-table-row">
+                <div className="stats-table-label">Total Users</div>
+                <div className="stats-table-value">{stats.totalUsers || 'N/A'}</div>
+              </div>
+              <div className="stats-table-row">
+                <div className="stats-table-label">Total Events</div>
+                <div className="stats-table-value">{stats.totalEvents || 'N/A'}</div>
+              </div>
+              <div className="stats-table-row">
+                <div className="stats-table-label">Total Volunteers</div>
+                <div className="stats-table-value">{stats.totalVolunteers || 'N/A'}</div>
+              </div>
+              <div className="stats-table-row">
+                <div className="stats-table-label">Total Registrations</div>
+                <div className="stats-table-value">{stats.totalRegistrations || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

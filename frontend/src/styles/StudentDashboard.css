@@ -148,6 +148,61 @@
   color: #ffffff;
 }
 
+/* ----------------- Upcoming Events Filters ----------------- */
+/* Place this after `.section-title` and before `.events-grid` */
+
+.dashboard-section .filters {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-input {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(20, 20, 25, 0.8);
+  color: #ffffff;
+  font-size: 0.95rem;
+  flex: 1 1 200px;
+  outline: none;
+}
+
+.filter-input:focus {
+  border-color: rgba(255, 107, 53, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+}
+
+.filter-select {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(20, 20, 25, 0.8);
+  color: #ffffff;
+  font-size: 0.95rem;
+  flex: 0 0 180px;
+  cursor: pointer;
+  outline: none;
+}
+
+.filter-select:focus {
+  border-color: rgba(255, 107, 53, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+}
+
+/* Responsive adjustments for filters */
+@media (max-width: 768px) {
+  .dashboard-section .filters {
+    flex-direction: column;
+  }
+
+  .filter-input,
+  .filter-select {
+    flex: 1 1 100%;
+  }
+}
+
 
 /* Event Cards */
 .events-grid {
@@ -971,3 +1026,4 @@
     padding: 0.5rem;
   }
 }
+

@@ -140,13 +140,22 @@ export default function CreateEvent() {
                 <div className="form-group">
                   <label>Category</label>
                   <input
-                    type="text"
+                    list="category-options"
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
                     placeholder="e.g., Technical, Cultural"
+                    autoComplete="off"
                   />
+                  <datalist id="category-options">
+                    <option value="Technical" />
+                    <option value="Educational" />
+                    <option value="Arts" />
+                    <option value="Sports" />
+                    <option value="Cultural" />
+                  </datalist>
                 </div>
+
               </div>
 
               <div className="form-group">

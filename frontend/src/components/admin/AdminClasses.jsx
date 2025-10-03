@@ -7,15 +7,15 @@ import "../../styles/StudentDashboard.css";
 
 function AdminClasses() {
   const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [classesError, setClassesError] = useState(null);
   const [userName, setUserName] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const navigate = useNavigate();
   
   const SEMESTERS_OPTIONS = ['1', '2', '3', '4', '5', '6', '7', '8']; 
-  const BRANCHES = ['CS', 'DS', 'AI/ML', 'EC', 'EEE', 'Mech', 'Civil', 'IT']; 
+  const BRANCHES = ['CS', 'DS', 'AI&ML', 'EC', 'EEE', 'Mech', 'Civil', 'IT']; 
   const [selectedSemester, setSelectedSemester] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
 
@@ -30,68 +30,28 @@ function AdminClasses() {
     }
   };
   
-  // Fetch user info and classes
+  // Fetch user info
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (user) setUserName(user.username || user.name || 'Admin');
+  }, []);
 
+  // Fetch classes data
+  useEffect(() => {
     const fetchClasses = async () => {
       try {
-        // Using centralized API instance; token is automatically attached
         const res = await API.get('/admin/classes');
-        // backend returns array of rows (e.g., [{ class: 'S1 CS' }...])
         setClasses(Array.isArray(res) ? res : []);
       } catch (err) {
         console.error('Error fetching classes:', err);
-        setError('Failed to load classes.');
+        setClassesError('Failed to load classes.');
       } finally {
-        setLoading(false);
+        setLoadingClasses(false);
       }
     };
 
     fetchClasses();
   }, []);
-
-  if (loading) {
-    return (
-      <div className="student-dashboard">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading classes...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="student-dashboard">
-        <button 
-          className="mobile-menu-toggle"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          ☰
-        </button>
-
-        <AdminSidebarNav 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        <div className="main-content">
-          <div className="dashboard-header">
-            <h1 className="dashboard-title">Classes Management</h1>
-            <p className="dashboard-subtitle">Manage class information and reports</p>
-          </div>
-          
-          <div className="empty-state">
-            <div className="empty-title">Unable to Load Classes</div>
-            <div className="empty-description">{error}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="student-dashboard">
@@ -113,6 +73,7 @@ function AdminClasses() {
           <p className="dashboard-subtitle">View and manage class information across semesters</p>
         </div>
 
+        {/* Generate Class Report Form - loads immediately */}
         <div className="dashboard-section">
           <div className="section-header">
             <div className="section-title">Generate Class Report</div>
@@ -159,12 +120,25 @@ function AdminClasses() {
           </div>
         </div>
 
+        {/* Available Classes - only this section waits for API */}
         <div className="dashboard-section">
           <div className="section-header">
             <div className="section-title">Available Classes</div>
           </div>
           
-          {classes.length === 0 ? (
+          {loadingClasses ? (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading classes...</p>
+            </div>
+          ) : classesError ? (
+            <div className="empty-state">
+              <div className="empty-title">Unable to Load Classes</div>
+              <div className="empty-description" style={{ color: '#ef4444' }}>
+                {classesError}
+              </div>
+            </div>
+          ) : classes.length === 0 ? (
             <div className="empty-state">
               <div className="empty-title">No Classes Found</div>
               <div className="empty-description">

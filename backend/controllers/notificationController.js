@@ -43,7 +43,6 @@ export const notifyAllStudentsNewEvent = async (eventData) => {
       return;
     }
 
-    console.log(`Successfully sent notifications to ${students.length} students for event: ${eventData.name}`);
   } catch (error) {
     console.error('Error in notifyAllStudentsNewEvent:', error);
   }

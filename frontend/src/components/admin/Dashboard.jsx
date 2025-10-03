@@ -8,49 +8,34 @@ export default function AdminDashboard() {
   const [userName, setUserName] = useState('Admin');
   const [userEmail, setUserEmail] = useState('');
   const [userId, setUserId] = useState('');
-  const [keyStats, setKeyStats] = useState({ totalUsers: '...', totalEvents: '...', totalVolunteers: '...' });
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [keyStats, setKeyStats] = useState({ totalUsers: 0, totalEvents: 0, totalVolunteers: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
- useEffect(() => {
-  const user = authService.getCurrentUser();
-  if (user) {
-    setUserName(user.username || user.name);
-    setUserEmail(user.email);
-    setUserId(user.user_id);
-  }
-
-  // Fetch Key System Stats for the dashboard cards
-  const fetchKeyStats = async () => {
-    try {
-      // Using centralized API instance; token is automatically attached
-      const response = await API.get('/admin/system-stats');
-      const data = response || {};
-      setKeyStats({
-        totalUsers: data.totalUsers,
-        totalEvents: data.totalEvents,
-        totalVolunteers: data.totalVolunteers,
-      });
-    } catch (error) {
-      setKeyStats({ totalUsers: 'N/A', totalEvents: 'N/A', totalVolunteers: 'N/A' });
-    } finally {
-      setLoadingStats(false);
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      setUserName(user.username || user.name);
+      setUserEmail(user.email);
+      setUserId(user.user_id);
     }
-  };
 
-  fetchKeyStats();
-}, []);
+    // Fetch Key System Stats for the dashboard cards
+    const fetchKeyStats = async () => {
+      try {
+        const response = await API.get('/admin/system-stats');
+        const data = response || {};
+        setKeyStats({
+          totalUsers: data.totalUsers || 0,
+          totalEvents: data.totalEvents || 0,
+          totalVolunteers: data.totalVolunteers || 0,
+        });
+      } catch (error) {
+        setKeyStats({ totalUsers: 0, totalEvents: 0, totalVolunteers: 0 });
+      }
+    };
 
-  if (loadingStats) {
-    return (
-      <div className="student-dashboard">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+    fetchKeyStats();
+  }, []);
 
   return (
     <div className="student-dashboard">
@@ -76,7 +61,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="stats-grid">
+        <div className="stats-grid fade-in">
           <div className="stat-card">
             <div className="stat-title">Total Users</div>
             <div className="stat-value">{keyStats.totalUsers}</div>

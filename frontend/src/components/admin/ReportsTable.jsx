@@ -34,49 +34,6 @@ function ReportsTable() {
   }
 }, [className]);
 
-  if (loading) {
-    return (
-      <div className="student-dashboard">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading report data for {decodeURIComponent(className)}...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || reportData.length === 0) {
-    return (
-      <div className="student-dashboard">
-        <button 
-          className="mobile-menu-toggle"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          ☰
-        </button>
-
-        <AdminSidebarNav 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        <div className="main-content">
-          <div className="dashboard-header">
-            <h1 className="dashboard-title">Class Report</h1>
-            <p className="dashboard-subtitle">{decodeURIComponent(className)} - Participation Details</p>
-          </div>
-          
-          <div className="empty-state">
-            <div className="empty-title">No Report Data</div>
-            <div className="empty-description">
-              {error || "No report data found for this class combination."}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="student-dashboard">
       <button 
@@ -96,37 +53,51 @@ function ReportsTable() {
           <h1 className="dashboard-title">Class Report</h1>
           <p className="dashboard-subtitle">{decodeURIComponent(className)} - Participation Details</p>
         </div>
-
-        <div className="dashboard-section">
-          <div className="section-header">
-            <div className="section-title">Participation Report</div>
+        
+        {loading ? (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading report data for {decodeURIComponent(className)}...</p>
           </div>
-          
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>User ID</th>
-                  <th>Event Name</th>
-                  <th>Participation Type</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reportData.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.name || 'N/A'}</td>
-                    <td>{row.user_id || 'N/A'}</td>
-                    <td>{row.event_name || 'N/A'}</td>
-                    <td>{row.participation_type || 'N/A'}</td>
-                    <td>{row.date ? new Date(row.date).toLocaleDateString() : 'N/A'}</td>
+        ) : error || reportData.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-title">No Report Data</div>
+            <div className="empty-description" style={{ color: error ? '#ef4444' : '#666' }}>
+              {error || "No report data found for this class combination."}
+            </div>
+          </div>
+        ) : (
+          <div className="dashboard-section">
+            <div className="section-header">
+              <div className="section-title">Participation Report</div>
+            </div>
+            
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>User ID</th>
+                    <th>Event Name</th>
+                    <th>Participation Type</th>
+                    <th>Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reportData.map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.name || 'N/A'}</td>
+                      <td>{row.user_id || 'N/A'}</td>
+                      <td>{row.event_name || 'N/A'}</td>
+                      <td>{row.participation_type || 'N/A'}</td>
+                      <td>{row.date ? new Date(row.date).toLocaleDateString() : 'N/A'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
