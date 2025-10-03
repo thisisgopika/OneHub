@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../../api";
+import API from "../../services/api.js";
 import SidebarNav from "./SidebarNav";
 import RegistrationStatus from "./RegistrationStatus";
 import "../../styles/StudentDashboard.css";
@@ -23,11 +23,11 @@ export default function MyEvents() {
 
         // Fetch registered events
         const regRes = await API.get(`/users/${userId}/registrations`);
-        setRegistrations(regRes.data.registrations || []);
+        setRegistrations(regRes.registrations || []);
 
         // Fetch volunteer applications
         const volRes = await API.get(`/users/${userId}/volunteers`);
-        setVolunteers(volRes.data.volunteers || []);
+        setVolunteers(volRes.volunteers || []);
       } catch (err) {
         console.error("Error fetching My Events:", err);
       } finally {

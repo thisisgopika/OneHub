@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OrganizerSidebarNav from './OrganizerSidebarNav';
-import API from '../../api';
+import API from "../../services/api.js";
 import authService from '../../services/authService';
 import '../../styles/StudentDashboard.css';
 import '../../styles/OrganizerDashboard.css';

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import OrganizerSidebarNav from './OrganizerSidebarNav';
 import eventService from '../../services/eventService';
 import authService from '../../services/authService';
-import API from '../../api';
+import API from "../../services/api.js";
 import '../../styles/StudentDashboard.css';
 import '../../styles/OrganizerDashboard.css';
 
@@ -54,7 +54,7 @@ export default function EventReport() {
 
       // Fetch volunteers list using your actual endpoint
       const volunteersRes = await API.get(`/events/${eventId}/volunteers`);
-      setVolunteers(volunteersRes.data.volunteers || []);
+      setVolunteers(volunteersRes.volunteers || []);
 
       setError(null);
     } catch (err) {

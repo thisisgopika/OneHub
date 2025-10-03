@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../../api";
+import API from "../../services/api.js";
 import SidebarNav from "./SidebarNav.jsx";
 import EventCard from "./EventCard.jsx";
 import RegistrationStatus from "./RegistrationStatus.jsx";
@@ -10,6 +10,7 @@ import "../../styles/StudentDashboard.css";
 export default function StudentDashboard() {
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);
+  const [volunteerApplications, setVolunteerApplications] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,16 +23,20 @@ export default function StudentDashboard() {
       try {
         // Fetch upcoming events
         const eventsRes = await API.get("/events?upcoming=true");
-        setEvents(eventsRes.data.events || []);
+        setEvents(eventsRes.events || []);
 
-        // Fetch user registrations
+        // Fetch user registrations and volunteer applications
         if (userId) {
           const regRes = await API.get(`/users/${userId}/registrations`);
-          setRegistrations(regRes.data.registrations || []);
+          setRegistrations(regRes.registrations || []);
+
+          // Fetch volunteer applications
+          const volunteerRes = await API.get(`/users/${userId}/volunteers`);
+          setVolunteerApplications(volunteerRes.volunteers || []);
 
           // Fetch notifications
           const notifRes = await API.get(`/users/${userId}/notifications`);
-          setNotifications(notifRes.data.notifications || []);
+          setNotifications(notifRes.notifications || []);
         }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -50,7 +55,8 @@ export default function StudentDashboard() {
       // Refresh data
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.error || "❌ Registration failed");
+      const errorMessage = err.response?.data?.error || err.message || "❌ Registration failed";
+      alert(errorMessage);
     }
   };
 
@@ -61,7 +67,8 @@ export default function StudentDashboard() {
       // Refresh data
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.error || "❌ Application failed");
+      const errorMessage = err.response?.data?.error || err.message || "❌ Application failed";
+      alert(errorMessage);
     }
   };
 
@@ -86,6 +93,10 @@ export default function StudentDashboard() {
 
   const getRegistrationsCount = () => {
     return registrations.length;
+  };
+
+  const isVolunteerApplied = (eventId) => {
+    return volunteerApplications.some(app => app.event_id === eventId);
   };
 
   if (loading) {
@@ -142,14 +153,14 @@ export default function StudentDashboard() {
               </div>
             ) : (
               <div className="events-grid">
-                {events.slice(0, 3).map((event) => (
+                {events.map((event) => (
                   <EventCard
                     key={event.event_id}
                     event={event}
                     onRegister={handleRegister}
                     onVolunteer={handleVolunteer}
                     isRegistered={registrations.some(r => r.event_id === event.event_id)}
-                    isVolunteer={false} // You might want to add volunteer status check
+                    isVolunteer={isVolunteerApplied(event.event_id)}
                   />
                 ))}
               </div>

@@ -1,4 +1,4 @@
-import pool from '../config/database.js';
+import { supabase } from '../config/supabaseClient.js';
 
 // ==============================
 // Student Registrations
@@ -11,12 +11,18 @@ export const register = async (req, res) => {
     const { id: eventId } = req.params;
 
     // 1. Check if event exists
-    const eventQ = 'SELECT deadline, max_participants FROM events WHERE event_id = $1';
-    const { rows: eventRows } = await pool.query(eventQ, [eventId]);
-    if (!eventRows.length) {
-      return res.status(404).json({ error: 'Event not found' });
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('deadline, max_participants')
+      .eq('event_id', eventId)
+      .single();
+
+    if (eventError) {
+      if (eventError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      throw eventError;
     }
-    const event = eventRows[0];
 
     // 2. Deadline check
     if (event.deadline && new Date(event.deadline) < new Date()) {
@@ -24,26 +30,58 @@ export const register = async (req, res) => {
     }
 
     // 3. Already registered?
-    const checkQ = 'SELECT * FROM registrations WHERE event_id = $1 AND user_id = $2';
-    const { rows: existing } = await pool.query(checkQ, [eventId, user_id]);
-    if (existing.length) {
+    const { data: existing, error: checkError } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', user_id);
+
+    if (checkError) throw checkError;
+
+    if (existing && existing.length > 0) {
       return res.status(400).json({ error: 'Already registered for this event' });
     }
 
+    // 3.1. Check if already applied as volunteer for this event
+    const { data: volunteerApp, error: volunteerError } = await supabase
+      .from('volunteer_applications')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', user_id);
+
+    if (volunteerError) throw volunteerError;
+
+    if (volunteerApp && volunteerApp.length > 0) {
+      return res.status(400).json({ error: 'Cannot register for event - you have already applied as a volunteer for this event' });
+    }
+
     // 4. Capacity check
-    const countQ = 'SELECT COUNT(*) FROM registrations WHERE event_id = $1';
-    const { rows: countRows } = await pool.query(countQ, [eventId]);
-    if (parseInt(countRows[0].count) >= event.max_participants) {
+    const { count, error: countError } = await supabase
+      .from('registrations')
+      .select('*', { count: 'exact' })
+      .eq('event_id', eventId);
+
+    if (countError) throw countError;
+
+    if (count >= event.max_participants) {
       return res.status(400).json({ error: 'Event is full' });
     }
 
     // 5. Insert registration
-    const insertQ = 'INSERT INTO registrations (event_id, user_id) VALUES ($1, $2) RETURNING *';
-    const { rows: regRows } = await pool.query(insertQ, [eventId, user_id]);
+    const { data: registration, error: insertError } = await supabase
+      .from('registrations')
+      .insert({
+        event_id: eventId,
+        user_id: user_id
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
 
     res.status(201).json({
       message: 'Registered successfully',
-      registration: regRows[0]
+      registration
     });
   } catch (err) {
     console.error('register error:', err.message);
@@ -57,10 +95,16 @@ export const cancel = async (req, res) => {
     const user_id = req.user.user_id;
     const { id: eventId } = req.params;
 
-    const delQ = 'DELETE FROM registrations WHERE event_id = $1 AND user_id = $2 RETURNING *';
-    const { rows } = await pool.query(delQ, [eventId, user_id]);
+    const { data, error } = await supabase
+      .from('registrations')
+      .delete()
+      .eq('event_id', eventId)
+      .eq('user_id', user_id)
+      .select();
 
-    if (!rows.length) {
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
       return res.status(404).json({ error: 'Registration not found' });
     }
 
@@ -76,17 +120,51 @@ export const getRegistrationsForUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const q = `
-      SELECT r.reg_id, r.status, r.registration_date,
-             e.event_id, e.name, e.date, e.venue
-      FROM registrations r
-      JOIN events e ON r.event_id = e.event_id
-      WHERE r.user_id = $1
-      ORDER BY e.date DESC
-    `;
+    // First get registrations
+    const { data: registrations, error: regError } = await supabase
+      .from('registrations')
+      .select('reg_id, status, registration_date, event_id')
+      .eq('user_id', userId)
+      .order('registration_date', { ascending: false });
 
-    const { rows } = await pool.query(q, [userId]);
-    res.json({ success: true, registrations: rows });
+    if (regError) throw regError;
+
+    if (!registrations || registrations.length === 0) {
+      return res.json({ success: true, registrations: [] });
+    }
+
+    // Get event IDs
+    const eventIds = registrations.map(reg => reg.event_id);
+
+    // Then get event details separately
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select('event_id, name, date, venue')
+      .in('event_id', eventIds);
+
+    if (eventsError) throw eventsError;
+
+    // Create a map for faster lookup
+    const eventMap = {};
+    events.forEach(event => {
+      eventMap[event.event_id] = event;
+    });
+
+    // Combine the data and sort by event date
+    const combinedRegistrations = registrations.map(reg => ({
+      reg_id: reg.reg_id,
+      status: reg.status,
+      registration_date: reg.registration_date,
+      event_id: reg.event_id,
+      name: eventMap[reg.event_id]?.name || 'Unknown Event',
+      date: eventMap[reg.event_id]?.date || null,
+      venue: eventMap[reg.event_id]?.venue || 'Unknown Venue'
+    }));
+
+    // Sort by event date (most recent first)
+    combinedRegistrations.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({ success: true, registrations: combinedRegistrations });
   } catch (err) {
     console.error('getRegistrationsForUser error:', err.message);
     res.status(500).json({ error: 'Server error' });

@@ -27,8 +27,6 @@ const pool = process.env.DATABASE_URL
 console.log('Using database connection:', process.env.DATABASE_URL ? 'SUPABASE' : 'LOCAL');
 console.log('======================');
 
-pool.connect()
-  .then(() => console.log("✅ PostgreSQL Database connected!"))
-  .catch((err) => console.error("❌ PostgreSQL Connection Error:", err));
+
 
 export default pool;

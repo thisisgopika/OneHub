@@ -3,7 +3,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import { getRegistrationsForUser } from "../controllers/registrationController.js";
 import { getVolunteersByUser } from "../controllers/volunteerController.js";
 import { getNotificationsByUser, markNotificationRead } from "../controllers/notificationController.js";
-import pool from "../config/database.js";
+import { supabase } from "../config/supabaseClient.js";
 // Add this route after the imports
 
 const router = express.Router();
@@ -33,23 +33,76 @@ router.get("/:userId/reports", authMiddleware, async (req, res) => {
     const { semester } = req.query;
     const { userId } = req.params;
 
-    let query = `
-      SELECT r.reg_id, e.event_id, e.name, e.date, e.category, r.registration_date, u.semester
-      FROM registrations r
-      JOIN events e ON r.event_id = e.event_id
-      JOIN users u ON r.user_id = u.user_id
-      WHERE r.user_id = $1
-    `;
-
-    const params = [userId];
+    // First get user info to check semester if filter is applied
     if (semester) {
-      params.push(parseInt(semester));
-      query += ` AND u.semester = $${params.length}`;
-    }
-    query += " ORDER BY r.registration_date DESC";
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('semester')
+        .eq('user_id', userId)
+        .single();
 
-    const { rows } = await pool.query(query, params);
-    res.json({ success: true, reports: rows });
+      if (userError) {
+        if (userError.code === 'PGRST116') {
+          return res.json({ success: true, reports: [] });
+        }
+        throw userError;
+      }
+
+      // If user's semester doesn't match the filter, return empty
+      if (user.semester !== parseInt(semester)) {
+        return res.json({ success: true, reports: [] });
+      }
+    }
+
+    // Get registrations for the user
+    const { data: registrations, error: regError } = await supabase
+      .from('registrations')
+      .select('reg_id, registration_date, event_id')
+      .eq('user_id', userId)
+      .order('registration_date', { ascending: false });
+
+    if (regError) throw regError;
+
+    if (!registrations || registrations.length === 0) {
+      return res.json({ success: true, reports: [] });
+    }
+
+    // Get event details for these registrations
+    const eventIds = registrations.map(reg => reg.event_id);
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select('event_id, name, date, category')
+      .in('event_id', eventIds);
+
+    if (eventsError) throw eventsError;
+
+    // Get user semester info
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('semester')
+      .eq('user_id', userId)
+      .single();
+
+    if (userError) throw userError;
+
+    // Create event map for faster lookup
+    const eventMap = {};
+    events.forEach(event => {
+      eventMap[event.event_id] = event;
+    });
+
+    // Transform the data to match the expected format
+    const reports = registrations.map(reg => ({
+      reg_id: reg.reg_id,
+      event_id: reg.event_id,
+      name: eventMap[reg.event_id]?.name || 'Unknown Event',
+      date: eventMap[reg.event_id]?.date || null,
+      category: eventMap[reg.event_id]?.category || 'Unknown',
+      registration_date: reg.registration_date,
+      semester: user.semester
+    }));
+
+    res.json({ success: true, reports });
   } catch (err) {
     console.error("getReports error:", err.message);
     res.status(500).json({ error: "Failed to fetch reports" });

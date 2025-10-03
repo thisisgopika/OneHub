@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../../api";
+import API from "../../services/api.js";
 import SidebarNav from "./SidebarNav";
 import NotificationItem from "./NotificationItem";
 import "../../styles/StudentDashboard.css";
@@ -15,8 +15,8 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     try {
       if (!userId) return;
-      const { data } = await API.get(`/users/${userId}/notifications`);
-      setNotifications(data.notifications || []);
+      const response = await API.get(`/users/${userId}/notifications`);
+      setNotifications(response.notifications || []);
     } catch (err) {
       console.error("Error fetching notifications:", err);
     } finally {

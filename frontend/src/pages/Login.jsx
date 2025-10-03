@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import authService from "../services/authService.js";
+import "./Login.css";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -57,69 +58,66 @@ const Login = () => {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "20px" }}>
-      <h2>Login to OneHub</h2>
-
-      {error && (
-        <div
-          style={{
-            color: "red",
-            marginBottom: "10px",
-            padding: "10px",
-            backgroundColor: "#ffe6e6",
-            border: "1px solid red",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "15px" }}>
-          <label>User ID:</label>
-          <input
-            type="text"
-            name="user_id"
-            value={formData.user_id}
-            onChange={handleChange}
-            required
-            style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-            placeholder="Enter your user ID (e.g., S101, O101)"
-          />
+    <div className="login-page">
+      <Link to="/" className="back-to-home">
+        ← Back to Home
+      </Link>
+      
+      <div className="login-container">
+        <div className="login-header">
+          <Link to="/" className="login-logo">
+            OneHub
+          </Link>
+          <h1 className="login-title">Welcome Back</h1>
+          <p className="login-subtitle">Sign in to your OneHub account</p>
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
-          <label>Password:</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-            placeholder="Enter your password"
-          />
+        {error && (
+          <div className="alert alert-error">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label className="form-label">User ID</label>
+            <input
+              type="text"
+              name="user_id"
+              value={formData.user_id}
+              onChange={handleChange}
+              required
+              className="form-input"
+              placeholder="Enter your user ID (e.g., S101, O101)"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="form-input"
+              placeholder="Enter your password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-btn"
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          Don't have an account? <Link to="/register">Create one here</Link>
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "10px",
-            backgroundColor: loading ? "#ccc" : "#007bff",
-            color: "white",
-            border: "none",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-
-      <p style={{ textAlign: "center", marginTop: "20px" }}>
-        Don't have an account? <a href="/register">Register here</a>
-      </p>
+      </div>
     </div>
   );
 };

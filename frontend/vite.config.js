@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api": "http://localhost:5000",   // backend API
-      "/health": "http://localhost:5000" // backend health check
+      "/api": "https://onehub-backend-wqbd.onrender.com",   // backend API
+      "/health": "https://onehub-backend-wqbd.onrender.com" // backend health check
     },
   },
 });

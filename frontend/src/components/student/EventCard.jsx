@@ -54,6 +54,8 @@ const EventCard = ({ event, onRegister, onVolunteer, isRegistered, isVolunteer }
           <button
             onClick={() => onRegister(event.event_id)}
             className="btn btn-primary"
+            disabled={isVolunteer}
+            title={isVolunteer ? "Cannot register - you have applied as volunteer for this event" : "Register for this event"}
           >
             <span>Register</span>
           </button>
@@ -64,13 +66,20 @@ const EventCard = ({ event, onRegister, onVolunteer, isRegistered, isVolunteer }
           </div>
         )}
         
-        {!isVolunteer && (
+        {!isVolunteer ? (
           <button
             onClick={() => onVolunteer(event.event_id)}
             className="btn btn-secondary"
+            disabled={isRegistered}
+            title={isRegistered ? "Cannot apply as volunteer - you are already registered for this event" : "Apply as volunteer for this event"}
           >
             <span>Apply as Volunteer</span>
           </button>
+        ) : (
+          <div className="volunteer-applied-badge">
+            <span className="check-icon">✓</span>
+            <span>Volunteer Applied</span>
+          </div>
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../../api";
+import API from "../../services/api.js";
 import SidebarNav from "./SidebarNav";
 import "../../styles/StudentDashboard.css";
 
@@ -20,8 +20,8 @@ export default function MyReports() {
         ? `/users/${userId}/reports?semester=${semester}`
         : `/users/${userId}/reports`;
 
-      const { data } = await API.get(url);
-      setReports(data.reports || []);
+      const response = await API.get(url);
+      setReports(response.reports || []);
     } catch (err) {
       console.error("Error fetching reports:", err);
     } finally {

@@ -1,4 +1,4 @@
-import pool from '../config/database.js';
+import { supabase } from '../config/supabaseClient.js';
 
 // ==============================
 // Organizer Controllers
@@ -8,17 +8,49 @@ export const getEventVolunteers = async (req, res) => {
   try {
     const { id } = req.params; // id = event_id
 
-    const result = await pool.query(
-      `SELECT va.app_id, va.event_id, va.user_id, va.status, va.applied_date, 
-              u.name, u.class, u.semester
-       FROM volunteer_applications va
-       JOIN users u ON va.user_id = u.user_id
-       WHERE va.event_id = $1
-       ORDER BY va.applied_date ASC`,
-      [id]
-    );
+    // First get volunteer applications
+    const { data: applications, error: appError } = await supabase
+      .from('volunteer_applications')
+      .select('app_id, event_id, user_id, status, applied_date')
+      .eq('event_id', id)
+      .order('applied_date', { ascending: true });
 
-    res.json({ volunteers: result.rows });
+    if (appError) throw appError;
+
+    if (!applications || applications.length === 0) {
+      return res.json({ volunteers: [] });
+    }
+
+    // Get user IDs
+    const userIds = applications.map(app => app.user_id);
+
+    // Then get user details separately
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('user_id, name, class, semester')
+      .in('user_id', userIds);
+
+    if (usersError) throw usersError;
+
+    // Create a map for faster lookup
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.user_id] = user;
+    });
+
+    // Combine the data
+    const volunteers = applications.map(app => ({
+      app_id: app.app_id,
+      event_id: app.event_id,
+      user_id: app.user_id,
+      status: app.status,
+      applied_date: app.applied_date,
+      name: userMap[app.user_id]?.name || 'Unknown',
+      class: userMap[app.user_id]?.class || 'Unknown',
+      semester: userMap[app.user_id]?.semester || 0
+    }));
+
+    res.json({ volunteers });
   } catch (error) {
     console.error('Get Event Volunteers Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch volunteers' });
@@ -29,31 +61,46 @@ export const acceptVolunteer = async (req, res) => {
   try {
     const { id } = req.params; // app_id
 
-    const update = await pool.query(
-      `UPDATE volunteer_applications
-       SET status = 'accepted', decision_date = NOW()
-       WHERE app_id = $1
-       RETURNING event_id, user_id`,
-      [id]
-    );
+    // Update volunteer application
+    const { data: updateData, error: updateError } = await supabase
+      .from('volunteer_applications')
+      .update({
+        status: 'accepted',
+        decision_date: new Date().toISOString()
+      })
+      .eq('app_id', id)
+      .select('event_id, user_id')
+      .single();
 
-    if (update.rows.length === 0) {
-      return res.status(404).json({ error: 'Volunteer application not found' });
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Volunteer application not found' });
+      }
+      throw updateError;
     }
 
-    const { event_id, user_id } = update.rows[0];
+    const { event_id, user_id } = updateData;
 
-    const eventRes = await pool.query(
-      'SELECT name FROM events WHERE event_id = $1',
-      [event_id]
-    );
-    const eventName = eventRes.rows[0]?.name || 'the event';
+    // Get event name
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('name')
+      .eq('event_id', event_id)
+      .single();
 
-    await pool.query(
-      `INSERT INTO notifications (user_id, message, status, created_at)
-       VALUES ($1, $2, 'unread', NOW())`,
-      [user_id, `You are selected as Volunteer for ${eventName}`]
-    );
+    if (eventError) throw eventError;
+
+    const eventName = eventData?.name || 'the event';
+
+    // Create notification
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id,
+        message: `You are selected as Volunteer for ${eventName}`,
+        status: 'unread',
+        created_at: new Date().toISOString()
+      });
 
     res.json({ message: 'Volunteer accepted successfully' });
   } catch (error) {
@@ -66,25 +113,35 @@ export const rejectVolunteer = async (req, res) => {
   try {
     const { id } = req.params; // app_id
 
-    const update = await pool.query(
-      `UPDATE volunteer_applications
-       SET status = 'rejected', decision_date = NOW()
-       WHERE app_id = $1
-       RETURNING user_id`,
-      [id]
-    );
+    // Update volunteer application
+    const { data: updateData, error: updateError } = await supabase
+      .from('volunteer_applications')
+      .update({
+        status: 'rejected',
+        decision_date: new Date().toISOString()
+      })
+      .eq('app_id', id)
+      .select('user_id')
+      .single();
 
-    if (update.rows.length === 0) {
-      return res.status(404).json({ error: 'Volunteer application not found' });
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Volunteer application not found' });
+      }
+      throw updateError;
     }
 
-    const { user_id } = update.rows[0];
+    const { user_id } = updateData;
 
-    await pool.query(
-      `INSERT INTO notifications (user_id, message, status, created_at)
-       VALUES ($1, $2, 'unread', NOW())`,
-      [user_id, `Your volunteer request was rejected`]
-    );
+    // Create notification
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id,
+        message: `Your volunteer request was rejected`,
+        status: 'unread',
+        created_at: new Date().toISOString()
+      });
 
     res.json({ message: 'Volunteer rejected successfully' });
   } catch (error) {
@@ -104,22 +161,60 @@ export const applyVolunteer = async (req, res) => {
     const { id: eventId } = req.params;
 
     // Already applied?
-    const check = await pool.query(
-      'SELECT * FROM volunteer_applications WHERE event_id = $1 AND user_id = $2',
-      [eventId, user_id]
-    );
-    if (check.rows.length) {
+    const { data: existing, error: checkError } = await supabase
+      .from('volunteer_applications')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', user_id);
+
+    if (checkError) throw checkError;
+
+    if (existing && existing.length > 0) {
       return res.status(400).json({ error: 'Already applied as volunteer' });
     }
 
-    const insert = await pool.query(
-      'INSERT INTO volunteer_applications (event_id, user_id) VALUES ($1, $2) RETURNING *',
-      [eventId, user_id]
-    );
+    // Check if already registered for this event
+    const { data: registration, error: regError } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', user_id);
+
+    if (regError) throw regError;
+
+    if (registration && registration.length > 0) {
+      return res.status(400).json({ error: 'Cannot apply as volunteer - you are already registered for this event' });
+    }
+
+    // Get max app_id
+    const { data: maxIdData, error: maxIdError } = await supabase
+      .from('volunteer_applications')
+      .select('app_id')
+      .order('app_id', { ascending: false })
+      .limit(1);
+
+    if (maxIdError) throw maxIdError;
+
+    const maxId = maxIdData.length > 0 ? maxIdData[0].app_id : 0;
+    const newAppId = maxId + 1;
+
+    // Insert application
+    const { data, error } = await supabase
+      .from('volunteer_applications')
+      .insert({
+        app_id: newAppId,
+        event_id: eventId,
+        user_id: user_id,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.status(201).json({
       message: 'Volunteer application submitted',
-      application: insert.rows[0]
+      application: data
     });
   } catch (error) {
     console.error('applyVolunteer error:', error.message);
@@ -132,17 +227,47 @@ export const getVolunteersByUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const q = `
-      SELECT v.app_id, v.status, v.applied_date,
-             e.event_id, e.name AS event_name, e.date
-      FROM volunteer_applications v
-      JOIN events e ON v.event_id = e.event_id
-      WHERE v.user_id = $1
-      ORDER BY v.applied_date DESC
-    `;
+    // First get volunteer applications
+    const { data: applications, error: appError } = await supabase
+      .from('volunteer_applications')
+      .select('app_id, status, applied_date, event_id')
+      .eq('user_id', userId)
+      .order('applied_date', { ascending: false });
 
-    const { rows } = await pool.query(q, [userId]);
-    res.json({ success: true, volunteers: rows });
+    if (appError) throw appError;
+
+    if (!applications || applications.length === 0) {
+      return res.json({ success: true, volunteers: [] });
+    }
+
+    // Get event IDs
+    const eventIds = applications.map(app => app.event_id);
+
+    // Then get event details separately
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select('event_id, name, date')
+      .in('event_id', eventIds);
+
+    if (eventsError) throw eventsError;
+
+    // Create a map for faster lookup
+    const eventMap = {};
+    events.forEach(event => {
+      eventMap[event.event_id] = event;
+    });
+
+    // Combine the data
+    const volunteers = applications.map(app => ({
+      app_id: app.app_id,
+      status: app.status,
+      applied_date: app.applied_date,
+      event_id: app.event_id,
+      event_name: eventMap[app.event_id]?.name || 'Unknown Event',
+      date: eventMap[app.event_id]?.date || null
+    }));
+
+    res.json({ success: true, volunteers });
   } catch (error) {
     console.error('getVolunteersByUser error:', error.message);
     res.status(500).json({ error: 'Failed to fetch volunteer applications' });

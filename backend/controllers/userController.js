@@ -1,10 +1,14 @@
-import pool from "../config/database.js";
+import { supabase } from "../config/supabaseClient.js";
 
 // Get all users
 export const getUsers = async (req, res, next) => {
   try {
-    const result = await pool.query("SELECT user_id, name, email, role, class, semester FROM users");
-    res.json(result.rows);
+    const { data, error } = await supabase
+      .from('users')
+      .select('user_id, name, email, role, class, semester');
+    
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -14,11 +18,13 @@ export const getUsers = async (req, res, next) => {
 export const getUsersByRole = async (req, res, next) => {
   try {
     const { role } = req.params;
-    const result = await pool.query(
-      "SELECT user_id, name, email, role, class, semester FROM users WHERE role = $1",
-      [role]
-    );
-    res.json(result.rows);
+    const { data, error } = await supabase
+      .from('users')
+      .select('user_id, name, email, role, class, semester')
+      .eq('role', role);
+    
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -27,13 +33,20 @@ export const getUsersByRole = async (req, res, next) => {
 // Get user by ID
 export const getUserById = async (req, res, next) => {
   try {
-    const result = await pool.query(
-      "SELECT user_id, name, email, role, class, semester FROM users WHERE user_id = $1",
-      [req.params.id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ error: "User not found" });
-    res.json(result.rows[0]);
+    const { data, error } = await supabase
+      .from('users')
+      .select('user_id, name, email, role, class, semester')
+      .eq('user_id', req.params.id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: "User not found" });
+      }
+      throw error;
+    }
+    
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -48,11 +61,22 @@ export const createUser = async (req, res, next) => {
       return res.status(400).json({ error: "Required fields: user_id, password, name, email, role" });
     }
 
-    const result = await pool.query(
-      "INSERT INTO users (user_id, password, name, email, role, class, semester) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING user_id, name, email, role, class, semester",
-      [user_id, password, name, email, role, userClass, semester]
-    );
-    res.status(201).json(result.rows[0]);
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        user_id,
+        password,
+        name,
+        email,
+        role,
+        class: userClass,
+        semester
+      })
+      .select('user_id, name, email, role, class, semester')
+      .single();
+    
+    if (error) throw error;
+    res.status(201).json(data);
   } catch (err) {
     next(err);
   }
