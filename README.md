@@ -1,6 +1,5 @@
 # OneHub - Campus Event Management System
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgresql-15+-316192.svg)
@@ -234,4 +233,3 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-*Replace `[Team Member X]` and `@github-username` with your actual team members' names and GitHub profiles.*
