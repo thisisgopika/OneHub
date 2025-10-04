@@ -3,7 +3,13 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgresql-15+-316192.svg)
+![Express](https://img.shields.io/badge/express-4.18-lightgrey.svg)
+![Vite](https://img.shields.io/badge/vite-5.0-646CFF.svg)
+![Supabase](https://img.shields.io/badge/supabase-latest-3ECF8E.svg)
+![JWT](https://img.shields.io/badge/JWT-auth-000000.svg)
+![Render](https://img.shields.io/badge/deployed-render-46E3B7.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
+
 
 ## Description
 
