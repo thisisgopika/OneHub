@@ -219,3 +219,108 @@ export const getSystemStats = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 };
+
+// ... your existing functions above ...
+
+// NEW FUNCTION: Get Admin Dashboard with Class/Semester Performance
+export const getAdminDashboard = async (req, res) => {
+  try {
+    // Fetch all dashboard data in parallel
+    const [
+      classPerformanceResult,
+      semesterComparisonResult,
+      topPerformersResult
+    ] = await Promise.all([
+      // Class performance table data
+      supabase
+        .from('class_semester_performance')
+        .select('*')
+        .order('engagement_rate', { ascending: false }),
+      
+      // Semester comparison cards
+      supabase
+        .from('semester_comparison')
+        .select('*')
+        .order('semester', { ascending: true }),
+      
+      // Top 10 performers leaderboard
+      supabase
+        .from('top_performing_classes')
+        .select('*')
+        .limit(10)
+    ]);
+
+    // Check for errors
+    if (classPerformanceResult.error) throw classPerformanceResult.error;
+    if (semesterComparisonResult.error) throw semesterComparisonResult.error;
+    if (topPerformersResult.error) throw topPerformersResult.error;
+
+    // Calculate overview stats
+    const classPerformance = classPerformanceResult.data || [];
+    const semesterComparison = semesterComparisonResult.data || [];
+    
+    const overviewStats = {
+      total_classes: classPerformance.length,
+      total_students: semesterComparison.reduce((sum, sem) => sum + (sem.total_students || 0), 0),
+      avg_engagement: semesterComparison.length > 0 
+        ? Math.round(semesterComparison.reduce((sum, sem) => sum + (sem.engagement_rate || 0), 0) / semesterComparison.length * 10) / 10
+        : 0,
+      active_semesters: semesterComparison.map(s => s.semester).join(', ')
+    };
+
+    res.json({
+      success: true,
+      data: {
+        overview: overviewStats,
+        classPerformance: classPerformanceResult.data,
+        semesterComparison: semesterComparisonResult.data,
+        topPerformers: topPerformersResult.data,
+        lowPerformers: classPerformanceResult.data
+          .filter(c => c.engagement_rate < 50)
+          .slice(0, 5)
+      }
+    });
+
+  } catch (error) {
+    console.error('Admin dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// NEW FUNCTION: Get filtered class performance
+export const getClassPerformance = async (req, res) => {
+  try {
+    const { semester, min_engagement } = req.query;
+    
+    let query = supabase
+      .from('class_semester_performance')
+      .select('*');
+    
+    if (semester) {
+      query = query.eq('semester', parseInt(semester));
+    }
+    
+    if (min_engagement) {
+      query = query.gte('engagement_rate', parseFloat(min_engagement));
+    }
+    
+    const { data, error } = await query.order('engagement_rate', { ascending: false });
+    
+    if (error) throw error;
+    
+    res.json({
+      success: true,
+      data
+    });
+    
+  } catch (error) {
+    console.error('Class performance error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};

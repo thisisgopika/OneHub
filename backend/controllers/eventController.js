@@ -78,38 +78,23 @@ export const getOrganizerEvents = async (req, res) => {
   try {
     const organizer_id = req.user.user_id;
     
-    // First get events
-    const { data: events, error: eventsError } = await supabase
-      .from('events')
+    // ✅ Use view instead of complex queries
+    const { data, error } = await supabase
+      .from('organizer_event_summary')  // 👈 Using the view!
       .select('*')
       .eq('created_by', organizer_id)
       .order('date', { ascending: true });
 
-    if (eventsError) throw eventsError;
+    if (error) throw error;
 
-    // Then get stats for each event
-    const eventsWithStats = await Promise.all(
-      events.map(async (event) => {
-        const [registrations, volunteers] = await Promise.all([
-          supabase
-            .from('registrations')
-            .select('user_id', { count: 'exact' })
-            .eq('event_id', event.event_id),
-          supabase
-            .from('volunteer_applications')
-            .select('user_id', { count: 'exact' })
-            .eq('event_id', event.event_id)
-        ]);
+    // Map to match frontend expectations
+    const events = data.map(event => ({
+      ...event,
+      reg_count: event.registered_count,  // Frontend expects 'reg_count'
+      vol_count: event.total_volunteer_applications  // Frontend expects 'vol_count'
+    }));
 
-        return {
-          ...event,
-          reg_count: registrations.count || 0,
-          vol_count: volunteers.count || 0
-        };
-      })
-    );
-
-    res.json({ events: eventsWithStats });
+    res.json({ events });
   } catch (error) {
     console.error('Fetch Events Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -120,30 +105,39 @@ export const getOrganizerEvents = async (req, res) => {
 export const getEventReport = async (req, res) => {
   const { id } = req.params;
   try {
-    const [attendees, volunteers] = await Promise.all([
-      supabase
-        .from('registrations')
-        .select('user_id', { count: 'exact' })
-        .eq('event_id', id),
-      supabase
-        .from('volunteer_applications')
-        .select('user_id', { count: 'exact' })
-        .eq('event_id', id)
-        .eq('status', 'accepted')
-    ]);
+    const { data: event } = await supabase
+      .from('organizer_event_summary')
+      .select('*')
+      .eq('event_id', id)
+      .single();
 
-    const reportData = {
-      total_attendees: attendees.count || 0,
-      total_volunteers: volunteers.count || 0
-    };
+    const { data: registrations } = await supabase
+      .from('registrations')
+      .select('*, users(user_id, name, class, semester)')
+      .eq('event_id', id);
 
-    res.json({ success: true, data: reportData });
+    const { data: volunteers } = await supabase
+      .from('volunteer_applications')
+      .select('*, users(user_id, name, class, semester)')
+      .eq('event_id', id);
+
+    res.json({ 
+      success: true, 
+      data: {
+        event: { name: event.name, date: event.date },
+        stats: {
+          total_attendees: event.registered_count || 0,
+          total_volunteers: event.accepted_volunteers || 0,
+          available_slots: event.available_slots || 0
+        },
+        registrations,
+        volunteers
+      }
+    });
   } catch (error) {
-    console.error('Error generating event report:', error.message);
     res.status(500).json({ error: 'Failed to generate report' });
   }
 };
-
 // Get event by ID
 export const getEventByID = async (req, res) => {
   const { id } = req.params;
