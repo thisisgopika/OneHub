@@ -153,6 +153,26 @@ function AdminClasses() {
                   <div className="class-description">
                     Class information and statistics
                   </div>
+                  <div className="class-actions">
+                    <button 
+                      className="action-button"
+                      onClick={() => {
+                        const encodedClass = encodeURIComponent(classItem.class);
+                        navigate(`/admin/classes/${encodedClass}/dashboard`);
+                      }}
+                    >
+                      View Dashboard
+                    </button>
+                    <button 
+                      className="action-button"
+                      onClick={() => {
+                        const encodedClass = encodeURIComponent(classItem.class);
+                        navigate(`/admin/classes/${encodedClass}/report`);
+                      }}
+                    >
+                      View Report
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

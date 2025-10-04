@@ -11,7 +11,7 @@ export const getEventVolunteers = async (req, res) => {
     // First get volunteer applications
     const { data: applications, error: appError } = await supabase
       .from('volunteer_applications')
-      .select('app_id, event_id, user_id, status, applied_date')
+      .select('app_id, event_id, user_id, status, applied_date, semester')
       .eq('event_id', id)
       .order('applied_date', { ascending: true });
 
@@ -27,7 +27,7 @@ export const getEventVolunteers = async (req, res) => {
     // Then get user details separately
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('user_id, name, class, semester')
+      .select('user_id, name, class')
       .in('user_id', userIds);
 
     if (usersError) throw usersError;
@@ -45,9 +45,9 @@ export const getEventVolunteers = async (req, res) => {
       user_id: app.user_id,
       status: app.status,
       applied_date: app.applied_date,
+      semester: app.semester, // Use semester from application
       name: userMap[app.user_id]?.name || 'Unknown',
-      class: userMap[app.user_id]?.class || 'Unknown',
-      semester: userMap[app.user_id]?.semester || 0
+      class: userMap[app.user_id]?.class || 'Unknown'
     }));
 
     res.json({ volunteers });
@@ -198,14 +198,28 @@ export const applyVolunteer = async (req, res) => {
     const maxId = maxIdData.length > 0 ? maxIdData[0].app_id : 0;
     const newAppId = maxId + 1;
 
-    // Insert application
+    // Get user's current semester
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('semester')
+      .eq('user_id', user_id)
+      .single();
+
+    if (userError) throw userError;
+
+    if (!user.semester) {
+      return res.status(400).json({ error: 'User semester not found' });
+    }
+
+    // Insert application with semester
     const { data, error } = await supabase
       .from('volunteer_applications')
       .insert({
         app_id: newAppId,
         event_id: eventId,
         user_id: user_id,
-        status: 'pending'
+        status: 'pending',
+        semester: user.semester
       })
       .select()
       .single();
@@ -230,7 +244,7 @@ export const getVolunteersByUser = async (req, res) => {
     // First get volunteer applications
     const { data: applications, error: appError } = await supabase
       .from('volunteer_applications')
-      .select('app_id, status, applied_date, event_id')
+      .select('app_id, status, applied_date, event_id, semester')
       .eq('user_id', userId)
       .order('applied_date', { ascending: false });
 
@@ -263,6 +277,7 @@ export const getVolunteersByUser = async (req, res) => {
       status: app.status,
       applied_date: app.applied_date,
       event_id: app.event_id,
+      semester: app.semester,
       event_name: eventMap[app.event_id]?.name || 'Unknown Event',
       date: eventMap[app.event_id]?.date || null
     }));

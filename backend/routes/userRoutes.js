@@ -33,33 +33,19 @@ router.get("/:userId/reports", authMiddleware, async (req, res) => {
     const { semester } = req.query;
     const { userId } = req.params;
 
-    // First get user info to check semester if filter is applied
-    if (semester) {
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('semester')
-        .eq('user_id', userId)
-        .single();
-
-      if (userError) {
-        if (userError.code === 'PGRST116') {
-          return res.json({ success: true, reports: [] });
-        }
-        throw userError;
-      }
-
-      // If user's semester doesn't match the filter, return empty
-      if (user.semester !== parseInt(semester)) {
-        return res.json({ success: true, reports: [] });
-      }
-    }
-
-    // Get registrations for the user
-    const { data: registrations, error: regError } = await supabase
+    // Build query for registrations with optional semester filter
+    let query = supabase
       .from('registrations')
-      .select('reg_id, registration_date, event_id')
+      .select('reg_id, registration_date, event_id, semester')
       .eq('user_id', userId)
       .order('registration_date', { ascending: false });
+
+    // Apply semester filter if provided
+    if (semester) {
+      query = query.eq('semester', parseInt(semester));
+    }
+
+    const { data: registrations, error: regError } = await query;
 
     if (regError) throw regError;
 
@@ -76,15 +62,6 @@ router.get("/:userId/reports", authMiddleware, async (req, res) => {
 
     if (eventsError) throw eventsError;
 
-    // Get user semester info
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('semester')
-      .eq('user_id', userId)
-      .single();
-
-    if (userError) throw userError;
-
     // Create event map for faster lookup
     const eventMap = {};
     events.forEach(event => {
@@ -99,7 +76,7 @@ router.get("/:userId/reports", authMiddleware, async (req, res) => {
       date: eventMap[reg.event_id]?.date || null,
       category: eventMap[reg.event_id]?.category || 'Unknown',
       registration_date: reg.registration_date,
-      semester: user.semester
+      semester: reg.semester
     }));
 
     res.json({ success: true, reports });

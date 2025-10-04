@@ -67,12 +67,26 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'Event is full' });
     }
 
-    // 5. Insert registration
+    // 5. Get user's current semester
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('semester')
+      .eq('user_id', user_id)
+      .single();
+
+    if (userError) throw userError;
+
+    if (!user.semester) {
+      return res.status(400).json({ error: 'User semester not found' });
+    }
+
+    // 6. Insert registration with semester
     const { data: registration, error: insertError } = await supabase
       .from('registrations')
       .insert({
         event_id: eventId,
-        user_id: user_id
+        user_id: user_id,
+        semester: user.semester
       })
       .select()
       .single();
@@ -123,7 +137,7 @@ export const getRegistrationsForUser = async (req, res) => {
     // First get registrations
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      .select('reg_id, status, registration_date, event_id')
+      .select('reg_id, status, registration_date, event_id, semester')
       .eq('user_id', userId)
       .order('registration_date', { ascending: false });
 
@@ -156,6 +170,7 @@ export const getRegistrationsForUser = async (req, res) => {
       status: reg.status,
       registration_date: reg.registration_date,
       event_id: reg.event_id,
+      semester: reg.semester,
       name: eventMap[reg.event_id]?.name || 'Unknown Event',
       date: eventMap[reg.event_id]?.date || null,
       venue: eventMap[reg.event_id]?.venue || 'Unknown Venue'

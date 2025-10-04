@@ -24,6 +24,15 @@ export const getClassDashboard = async (req, res) => {
   try {
     const { class_name } = req.params;
 
+    // Get total students in the class
+    const { count: totalStudents, error: studentsError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact' })
+      .eq('class', class_name)
+      .eq('role', 'student');
+
+    if (studentsError) throw studentsError;
+
     // Get total events participated by class
     const { data: eventsData, error: eventsError } = await supabase
       .from('registrations')
@@ -37,14 +46,14 @@ export const getClassDashboard = async (req, res) => {
 
     if (eventsError) throw eventsError;
 
-    const totalEventsParticipated = new Set(eventsData.map(r => r.event_id)).size;
+    const uniqueEvents = new Set(eventsData.map(r => r.event_id)).size;
 
     // Get total volunteers from class
     const { count: totalVolunteers, error: volunteersError } = await supabase
       .from('volunteer_applications')
       .select(`
         user_id,
-        users!inner (
+        users!volunteer_applications_user_id_fkey!inner (
           class
         )
       `, { count: 'exact' })
@@ -66,13 +75,15 @@ export const getClassDashboard = async (req, res) => {
 
     if (activeStudentsError) throw activeStudentsError;
 
-    const activeStudents = new Set(activeStudentsData.map(r => r.user_id)).size;
+    const activeStudentsCount = new Set(activeStudentsData.map(r => r.user_id)).size;
 
     const stats = {
-      totalEventsParticipated,
-      totalVolunteers: totalVolunteers || 0,
-      activeStudents,
+      totalStudents: totalStudents || 0,
+      eventParticipation: activeStudentsCount || 0,
+      volunteerParticipation: totalVolunteers || 0,
+      totalActivities: uniqueEvents || 0
     };
+    
     res.json(stats);
   } catch (error) {
     console.error("Error in getClassDashboard:", error);
@@ -107,7 +118,7 @@ export const getClassReport = async (req, res) => {
     // Get registrations for these users
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      .select('user_id, event_id')
+      .select('user_id, event_id, registration_date')
       .in('user_id', userIds);
 
     if (regError) throw regError;
@@ -115,7 +126,7 @@ export const getClassReport = async (req, res) => {
     // Get volunteer applications for these users
     const { data: volunteers, error: volError } = await supabase
       .from('volunteer_applications')
-      .select('user_id, event_id, status')
+      .select('user_id, event_id, status, decision_date')
       .in('user_id', userIds)
       .eq('status', 'accepted');
 
@@ -129,7 +140,7 @@ export const getClassReport = async (req, res) => {
     // Get event details
     const { data: events, error: eventError } = await supabase
       .from('events')
-      .select('event_id, name, date')
+      .select('event_id, name')
       .in('event_id', allEventIds);
 
     if (eventError) throw eventError;
@@ -159,7 +170,7 @@ export const getClassReport = async (req, res) => {
           semester: user.semester,
           event_name: event.name,
           participation_type: 'Attendee',
-          date: event.date
+          date: reg.registration_date
         });
       }
     });
@@ -175,7 +186,7 @@ export const getClassReport = async (req, res) => {
           semester: user.semester,
           event_name: event.name,
           participation_type: 'Volunteer',
-          date: event.date
+          date: vol.decision_date
         });
       }
     });
@@ -195,6 +206,101 @@ export const exportClassReport = async (req, res) => {
     res.json({ message: 'Export functionality is not yet implemented.' });
   } catch (error) {
     res.status(500).json({ error: 'Export failed' });
+  }
+};
+
+export const promoteClass = async (req, res) => {
+  try {
+    const { class_name } = req.params;
+    const { promotionType } = req.body; // 'semester' or 'year'
+    
+    if (!promotionType || !['semester', 'year'].includes(promotionType)) {
+      return res.status(400).json({ error: 'Invalid promotion type. Must be "semester" or "year".' });
+    }
+    
+    // Get all students in the specified class
+    const { data: students, error: fetchError } = await supabase
+      .from('users')
+      .select('user_id, class, semester')
+      .eq('role', 'student')
+      .eq('class', class_name);
+
+    if (fetchError) throw fetchError;
+
+    if (!students || students.length === 0) {
+      return res.status(404).json({ error: 'No students found in this class' });
+    }
+
+    const updates = [];
+    
+    students.forEach(student => {
+      let newClass = student.class;
+      let newSemester = student.semester;
+
+      if (promotionType === 'semester') {
+        // Promote to next semester
+        const currentSem = parseInt(student.semester) || 1;
+        if (currentSem < 8) {
+          newSemester = currentSem + 1;
+          // Update class to reflect new semester 
+          // Handle different patterns: 'S5 CS', 'S4 IT', etc.
+          newClass = student.class.replace(/S\d+/, `S${newSemester}`);
+        }
+      } else if (promotionType === 'year') {
+        // Promote to next year (skip one semester)
+        const currentSem = parseInt(student.semester) || 1;
+        if (currentSem < 7) {
+          newSemester = currentSem + 2; // Skip to next year
+          newClass = student.class.replace(/S\d+/, `S${newSemester}`);
+        }
+      }
+
+      // Only add to updates if there's an actual change and the student is eligible
+      if (newClass !== student.class || newSemester !== student.semester) {
+        updates.push({
+          user_id: student.user_id,
+          class: newClass,
+          semester: newSemester.toString()
+        });
+      }
+    });
+
+    if (updates.length === 0) {
+      return res.status(400).json({ 
+        error: 'No students eligible for promotion. Students may already be in final semester.' 
+      });
+    }
+
+    // Perform individual updates for each student
+    const updatePromises = updates.map(update => 
+      supabase
+        .from('users')
+        .update({ 
+          class: update.class, 
+          semester: update.semester 
+        })
+        .eq('user_id', update.user_id)
+    );
+
+    const updateResults = await Promise.all(updatePromises);
+    
+    // Check for any errors
+    const failedUpdates = updateResults.filter(result => result.error);
+    if (failedUpdates.length > 0) {
+      console.error('Some updates failed:', failedUpdates);
+      throw new Error('Some student promotions failed');
+    }
+
+    res.json({ 
+      message: `Successfully promoted ${updates.length} students`,
+      promotedStudents: updates.length,
+      promotionType,
+      details: updates
+    });
+
+  } catch (error) {
+    console.error("Error in promoteClass:", error);
+    res.status(500).json({ error: 'Failed to promote class' });
   }
 };
 
