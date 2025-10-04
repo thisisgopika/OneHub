@@ -3,7 +3,7 @@ import OrganizerSidebarNav from "./OrganizerSidebarNav.jsx";
 import EventCard from "../student/EventCard.jsx";
 import "../../styles/StudentDashboard.css"; // Reuse student dashboard styles
 
-import API from "../../api";
+import API from "../../services/api.js";
 import authService from "../../services/authService";
 
 export default function OrganizerDashboard() {
@@ -23,12 +23,18 @@ export default function OrganizerDashboard() {
     const fetchData = async () => {
       try {
         // Fetch events
-        const eventsRes = await API.get("/organizer/events");
-        setEvents(eventsRes.data.events || []);
+        const eventsRes = await API.get("/events/organizer");
+        setEvents(eventsRes.events || []);
 
-        // Fetch stats
-        const statsRes = await API.get("/organizer/stats");
-        setStats(statsRes.data || {});
+        // For now, calculate stats from events data since we don't have a dedicated stats endpoint
+        const now = new Date();
+        const allEvents = eventsRes.events || [];
+        const upcomingCount = allEvents.filter(e => new Date(e.date) > now).length;
+        
+        setStats({
+          totalEvents: allEvents.length,
+          upcomingEvents: upcomingCount,
+        });
       } catch (err) {
         console.error("Error fetching organizer dashboard data:", err);
       } finally {

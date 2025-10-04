@@ -1,1 +1,4 @@
 /test
+.env
+OneHub-backend.env
+.gitignore

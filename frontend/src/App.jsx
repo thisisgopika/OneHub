@@ -11,10 +11,10 @@ import StudentDashboard from './components/student/StudentDashboard.jsx';
 import OrganizerDashboard from './components/organizer/OrganizerDashboard.jsx';
 
 // admin new imports here
-import AdminClasses from './pages/AdminClasses.jsx';
-import ClassDashboard from './pages/ClassDashboard.jsx';
-import ReportsTable from './pages/ReportsTable.jsx';
-import SystemOverview from './pages/SystemOverview.jsx';
+import AdminClasses from './components/admin/AdminClasses.jsx';
+import ClassDashboard from './components/admin/ClassDashboard.jsx';
+import ReportsTable from './components/admin/ReportsTable.jsx';
+import SystemOverview from './components/admin/SystemOverview.jsx';
 
 // Organizer
 import CreateEvent from './components/organizer/CreateEvent.jsx' ;

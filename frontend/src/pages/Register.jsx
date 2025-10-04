@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService.js';
+import './Register.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -11,19 +12,41 @@ const Register = () => {
     email: '',
     role: 'student',
     class: '',
-    semester: ''
+    semester: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
+  const SEMESTERS_OPTIONS = ['1','2','3','4','5','6','7','8'];
+  const BRANCHES = ['CS','DS','AI&ML','EC','EEE','Mech','Civil','IT'];
+
   // Handle input changes
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
+  };
+
+  // Handle student-specific dropdown changes
+  const handleStudentFieldChange = (field, value) => {
+    const updated = { ...formData, [field]: value };
+
+    if (field === 'semester') {
+      updated.semester = value;
+    }
+    if (field === 'branch') {
+      updated.branch = value;
+    }
+
+    // Build class only if both semester and branch are chosen
+    if (updated.semester && updated.branch) {
+      updated.class = `S${updated.semester} ${updated.branch}`;
+    }
+
+    setFormData(updated);
   };
 
   // Handle form submission
@@ -33,27 +56,23 @@ const Register = () => {
     setError('');
     setSuccess('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
-    // Prepare data for backend (remove confirmPassword)
-    const { confirmPassword, ...registrationData } = formData;
-    
-    // Convert semester to number if provided
+    const { confirmPassword, branch, ...registrationData } = formData;
+
     if (registrationData.semester) {
       registrationData.semester = parseInt(registrationData.semester);
     }
 
     try {
       const result = await authService.register(registrationData);
-      
+
       if (result.success) {
         setSuccess('Registration successful! You can now login.');
-        // Clear form
         setFormData({
           user_id: '',
           password: '',
@@ -62,9 +81,8 @@ const Register = () => {
           email: '',
           role: 'student',
           class: '',
-          semester: ''
+          semester: '',
         });
-        // Redirect to login after 2 seconds
         setTimeout(() => navigate('/login'), 2000);
       } else {
         setError(result.error || 'Registration failed');
@@ -72,155 +90,164 @@ const Register = () => {
     } catch (error) {
       setError('Network error. Please try again.');
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: '500px', margin: '50px auto', padding: '20px' }}>
-      <h2>Register for OneHub</h2>
-      
-      {error && (
-        <div style={{ color: 'red', marginBottom: '10px', padding: '10px', backgroundColor: '#ffe6e6', border: '1px solid red' }}>
-          {error}
+    <div className="register-page">
+      <Link to="/" className="back-to-home">
+        ← Back to Home
+      </Link>
+
+      <div className="register-container">
+        <div className="register-header">
+          <Link to="/" className="register-logo">OneHub</Link>
+          <h1 className="register-title">Join OneHub</h1>
+          <p className="register-subtitle">Create your account to get started</p>
         </div>
-      )}
-      
-      {success && (
-        <div style={{ color: 'green', marginBottom: '10px', padding: '10px', backgroundColor: '#e6ffe6', border: '1px solid green' }}>
-          {success}
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
-          <label>User ID:</label>
-          <input
-            type="text"
-            name="user_id"
-            value={formData.user_id}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            placeholder="e.g., S101, O101, A101"
-          />
-        </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label>Full Name:</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            placeholder="Enter your full name"
-          />
-        </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label>Email:</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            placeholder="Enter your email"
-          />
-        </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label>Role:</label>
-          <select
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-          >
-            <option value="student">Student</option>
-            <option value="organizer">Organizer</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        
-        {formData.role === 'student' && (
-          <>
-            <div style={{ marginBottom: '15px' }}>
-              <label>Class:</label>
+
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+
+        <form onSubmit={handleSubmit} className="register-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">User ID</label>
               <input
                 type="text"
-                name="class"
-                value={formData.class}
+                name="user_id"
+                value={formData.user_id}
                 onChange={handleChange}
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                placeholder="e.g., S5 CS, S4 IT"
+                required
+                className="form-input"
+                placeholder="e.g., S101, O101, A101"
               />
             </div>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <label>Semester:</label>
+
+            <div className="form-group">
+              <label className="form-label">Role</label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="form-select"
+              >
+                <option value="student">Student</option>
+                <option value="organizer">Organizer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Full Name</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="form-input"
+              placeholder="Enter your full name"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="form-input"
+              placeholder="Enter your email address"
+            />
+          </div>
+
+          {formData.role === 'student' && (
+            <div className="student-fields">
+              <div className="student-fields-title">Student Information</div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Semester</label>
+                  <select
+                    name="semester"
+                    value={formData.semester}
+                    onChange={(e) => handleStudentFieldChange('semester', e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="">Choose Semester</option>
+                    {SEMESTERS_OPTIONS.map((sem) => (
+                      <option key={sem} value={sem}>
+                        Semester {sem}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Branch</label>
+                  <select
+                    name="branch"
+                    value={formData.branch || ''}
+                    onChange={(e) => handleStudentFieldChange('branch', e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="">Choose Branch</option>
+                    {BRANCHES.map((branch) => (
+                      <option key={branch} value={branch}>
+                        {branch}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Password</label>
               <input
-                type="number"
-                name="semester"
-                value={formData.semester}
+                type="password"
+                name="password"
+                value={formData.password}
                 onChange={handleChange}
-                min="1"
-                max="8"
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                placeholder="Enter semester (1-8)"
+                required
+                className="form-input"
+                placeholder="Create password"
               />
             </div>
-          </>
-        )}
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label>Password:</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            placeholder="Enter password"
-          />
+
+            <div className="form-group">
+              <label className="form-label">Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                className="form-input"
+                placeholder="Confirm password"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-btn"
+          >
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </button>
+        </form>
+
+        <div className="register-footer">
+          Already have an account? <Link to="/login">Sign in here</Link>
         </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label>Confirm Password:</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            placeholder="Confirm password"
-          />
-        </div>
-        
-        <button 
-          type="submit" 
-          disabled={loading}
-          style={{ 
-            width: '100%', 
-            padding: '10px', 
-            backgroundColor: loading ? '#ccc' : '#28a745', 
-            color: 'white', 
-            border: 'none', 
-            cursor: loading ? 'not-allowed' : 'pointer' 
-          }}
-        >
-          {loading ? 'Registering...' : 'Register'}
-        </button>
-      </form>
-      
-      <p style={{ textAlign: 'center', marginTop: '20px' }}>
-        Already have an account? <a href="/login">Login here</a>
-      </p>
+      </div>
     </div>
   );
 };

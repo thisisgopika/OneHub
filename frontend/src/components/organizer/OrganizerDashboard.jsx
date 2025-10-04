@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import OrganizerSidebarNav from "./OrganizerSidebarNav";
 import "../../styles/StudentDashboard.css";
 import "../../styles/OrganizerDashboard.css";
-import API from "../../api";
+import API from "../../services/api.js";
 import authService from "../../services/authService";
 
 export default function OrganizerDashboard() {
@@ -19,12 +19,8 @@ export default function OrganizerDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const eventsRes = await API.get("/events");
-        const allEvents = eventsRes.data.events || [];
-        
-        const myEvents = allEvents.filter(
-          event => event.created_by === user?.user_id
-        );
+        const eventsRes = await API.get("/events/organizer");
+        const myEvents = eventsRes.events || [];
         
         setEvents(myEvents);
 
@@ -121,7 +117,7 @@ export default function OrganizerDashboard() {
                     </div>
                     <div className="event-capacity">
                       <span className="meta-icon">👥</span>
-                      <span>{event.registration_count || 0} registered</span>
+                      <span>{event.reg_count || 0} registered</span>
                     </div>
                   </div>
                   

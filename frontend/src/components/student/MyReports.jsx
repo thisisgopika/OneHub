@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../../api";
+import API from "../../services/api.js";
 import SidebarNav from "./SidebarNav";
 import "../../styles/StudentDashboard.css";
 
@@ -7,23 +7,30 @@ export default function MyReports() {
   const [reports, setReports] = useState([]);
   const [semester, setSemester] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.user_id;
 
   const fetchReports = async () => {
+    setLoading(true);
     try {
-      if (!userId) return;
+      if (!userId) {
+        setError('User not found');
+        return;
+      }
 
       const url = semester
         ? `/users/${userId}/reports?semester=${semester}`
         : `/users/${userId}/reports`;
 
-      const { data } = await API.get(url);
-      setReports(data.reports || []);
+      const response = await API.get(url);
+      setReports(response.reports || []);
+      setError(null);
     } catch (err) {
       console.error("Error fetching reports:", err);
+      setError(err.message || 'Failed to fetch reports');
     } finally {
       setLoading(false);
     }
@@ -33,17 +40,6 @@ export default function MyReports() {
     fetchReports();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [semester]);
-
-  if (loading) {
-    return (
-      <div className="student-dashboard">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading reports...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="student-dashboard">
@@ -101,14 +97,32 @@ export default function MyReports() {
             <div className="section-title">Participation History</div>
           </div>
           
-          {reports.length === 0 ? (
+          {loading && (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading reports...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="empty-state">
+              <div className="empty-title">Error</div>
+              <div className="empty-description" style={{ color: '#ef4444' }}>
+                {error}
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && reports.length === 0 && (
             <div className="empty-state">
               <div className="empty-title">No Participation Records</div>
               <div className="empty-description">
                 No participation records found for the selected semester.
               </div>
             </div>
-          ) : (
+          )}
+
+          {!loading && !error && reports.length > 0 && (
             <div className="report-table-wrapper">
               <table className="report-table">
                 <thead>

@@ -1,6 +1,6 @@
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://onehub-q86m.onrender.com/api'
-  : 'http://localhost:5000/api';
+const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL)
+  ? import.meta.env.VITE_API_BASE_URL
+  : (import.meta?.env?.PROD ? 'https://onehub-backend-wqbd.onrender.com/api' : 'http://localhost:5000/api');
 
 import authService from './authService.js'; // Add this import
 
@@ -24,7 +24,14 @@ const api = {
       headers,
     });
     
-    return response.json();
+    const result = await response.json();
+    
+    // If response is not ok, throw an error with the server's error message
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    return result;
   },
   
   post: async (endpoint, data, token = null) => {
@@ -47,7 +54,14 @@ const api = {
       body: JSON.stringify(data),
     });
     
-    return response.json();
+    const result = await response.json();
+    
+    // If response is not ok, throw an error with the server's error message
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    return result;
   },
 
   // PUT request
@@ -67,7 +81,14 @@ const api = {
       body: JSON.stringify(data),
     });
 
-    return response.json();
+    const result = await response.json();
+    
+    // If response is not ok, throw an error with the server's error message
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return result;
   },
 
   // DELETE request
@@ -88,7 +109,14 @@ const api = {
       headers,
     });
 
-    return response.json();
+    const result = await response.json();
+    
+    // If response is not ok, throw an error with the server's error message
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return result;
   },
 
 };

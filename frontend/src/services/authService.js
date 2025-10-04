@@ -1,13 +1,13 @@
-import API from "../api.js";
+import API from "./api.js";
 
 const authService = {
   // Register new user
   register: async (userData) => {
     try {
       const response = await API.post("/auth/register", userData);
-      return { success: true, data: response.data };
+      return { success: true, data: response };
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || error.message };
+      return { success: false, error: error.message || "Registration failed" };
     }
   },
 
@@ -16,19 +16,19 @@ const authService = {
     try {
       const response = await API.post("/auth/login", credentials);
 
-      // ✅ Try to extract token + user safely
-      const token = response.data?.token;
-      const user = response.data?.user || response.data?.data || null;
+      // ✅ Backend sends token and user directly in response, not nested under data
+      const token = response.token;
+      const user = response.user;
 
       if (token && user) {
         // Save both token and user together
         localStorage.setItem("user", JSON.stringify({ ...user, token }));
         return { success: true, data: { ...user, token } };
       } else {
-        return { success: false, error: "Invalid login response from server" };
+        return { success: false, error: response.error || "Invalid login response from server" };
       }
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || error.message };
+      return { success: false, error: error.message || "Login failed" };
     }
   },
 
