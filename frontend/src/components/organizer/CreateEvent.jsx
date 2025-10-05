@@ -18,6 +18,7 @@ export default function CreateEvent() {
     category: '',
     deadline: '',
     capacity: '',
+    registration_form_link: ''
   });
 
   const user = authService.getCurrentUser();
@@ -29,29 +30,28 @@ export default function CreateEvent() {
     });
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Add created_by field before sending
-  const eventData = {
-    ...formData,
-    created_by: user?.user_id
-  };
-  
-  console.log('Submitting form data:', eventData);
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const eventData = {
+      ...formData,
+      created_by: user?.user_id
+    };
+    
+    console.log('Submitting form data:', eventData);
+    setLoading(true);
 
-  try {
-    await API.post('/events', eventData);
-    alert('Event created successfully!');
-    navigate('/dashboard/organizer');
-  } catch (err) {
-    console.log('Error response:', err.response?.data);
-    alert(err.response?.data?.error || 'Failed to create event');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      await API.post('/events', eventData);
+      alert('Event created successfully!');
+      navigate('/dashboard/organizer');
+    } catch (err) {
+      console.log('Error response:', err.response?.data);
+      alert(err.response?.data?.error || 'Failed to create event');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="student-dashboard">
@@ -155,7 +155,6 @@ export default function CreateEvent() {
                     <option value="Cultural" />
                   </datalist>
                 </div>
-
               </div>
 
               <div className="form-group">
@@ -167,6 +166,25 @@ export default function CreateEvent() {
                   onChange={handleChange}
                   placeholder="Maximum participants"
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Registration Form Link (Optional)</label>
+                <input
+                  type="url"
+                  name="registration_form_link"
+                  value={formData.registration_form_link}
+                  onChange={handleChange}
+                  placeholder="https://forms.google.com/..."
+                />
+                <small style={{ 
+                  display: 'block', 
+                  marginTop: '0.5rem', 
+                  color: '#888',
+                  fontSize: '0.875rem' 
+                }}>
+                  Add Google Form link if external registration is required
+                </small>
               </div>
 
               <div className="form-actions">
