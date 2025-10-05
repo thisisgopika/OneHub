@@ -118,7 +118,7 @@ export const getClassReport = async (req, res) => {
     // Get registrations for these users
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      .select('user_id, event_id, registration_date')
+      .select('user_id, event_id, registration_date, semester')
       .in('user_id', userIds);
 
     if (regError) throw regError;
@@ -126,7 +126,7 @@ export const getClassReport = async (req, res) => {
     // Get volunteer applications for these users
     const { data: volunteers, error: volError } = await supabase
       .from('volunteer_applications')
-      .select('user_id, event_id, status, decision_date')
+      .select('user_id, event_id, status, decision_date, semester')
       .in('user_id', userIds)
       .eq('status', 'accepted');
 
@@ -167,7 +167,7 @@ export const getClassReport = async (req, res) => {
         report.push({
           name: user.name,
           user_id: user.user_id,
-          semester: user.semester,
+          semester: reg.semester,
           event_name: event.name,
           participation_type: 'Attendee',
           date: reg.registration_date
@@ -183,7 +183,7 @@ export const getClassReport = async (req, res) => {
         report.push({
           name: user.name,
           user_id: user.user_id,
-          semester: user.semester,
+          semester: vol.semester,
           event_name: event.name,
           participation_type: 'Volunteer',
           date: vol.decision_date

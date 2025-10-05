@@ -37,6 +37,48 @@ export default function ManageEvents() {
     navigate(`/dashboard/organizer/events/${eventId}`);
   };
 
+  const handleToggleVolunteerCalls = async (eventId, currentStatus) => {
+    try {
+      const newStatus = !currentStatus;
+      const response = await eventService.toggleVolunteerCalls(eventId, newStatus);
+      
+      if (response.success) {
+        // Update local state
+        setEvents(events.map(event => 
+          event.event_id === eventId 
+            ? { ...event, volunteer_calls_enabled: newStatus }
+            : event
+        ));
+        alert(`Volunteer calls ${newStatus ? 'enabled' : 'disabled'} successfully`);
+      } else {
+        alert(response.error || 'Failed to toggle volunteer calls');
+      }
+    } catch (err) {
+      alert('Failed to toggle volunteer calls');
+    }
+  };
+
+  const handleToggleRegistrations = async (eventId, currentStatus) => {
+    try {
+      const newStatus = !currentStatus;
+      const response = await eventService.toggleRegistrations(eventId, newStatus);
+      
+      if (response.success) {
+        // Update local state
+        setEvents(events.map(event => 
+          event.event_id === eventId 
+            ? { ...event, registrations_enabled: newStatus }
+            : event
+        ));
+        alert(`Registrations ${newStatus ? 'enabled' : 'disabled'} successfully`);
+      } else {
+        alert(response.error || 'Failed to toggle registrations');
+      }
+    } catch (err) {
+      alert('Failed to toggle registrations');
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -109,6 +151,8 @@ export default function ManageEvents() {
                     <th>Deadline</th>
                     <th>Registrations</th>
                     <th>Volunteers</th>
+                    <th>Registration Status</th>
+                    <th>Volunteer Calls</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -119,6 +163,36 @@ export default function ManageEvents() {
                       <td>{formatDate(event.deadline)}</td>
                       <td>{event.reg_count || 0}</td>
                       <td>{event.vol_count || 0}</td>
+                      <td>
+                        <div className="toggle-container">
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={event.registrations_enabled || false}
+                              onChange={() => handleToggleRegistrations(event.event_id, event.registrations_enabled)}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
+                          <span className={`status-text ${event.registrations_enabled ? 'enabled' : 'disabled'}`}>
+                            {event.registrations_enabled ? 'Open' : 'Closed'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="toggle-container">
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={event.volunteer_calls_enabled || false}
+                              onChange={() => handleToggleVolunteerCalls(event.event_id, event.volunteer_calls_enabled)}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
+                          <span className={`status-text ${event.volunteer_calls_enabled ? 'enabled' : 'disabled'}`}>
+                            {event.volunteer_calls_enabled ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </td>
                       <td>
                         <div className="action-buttons">
                           <button

@@ -160,6 +160,25 @@ export const applyVolunteer = async (req, res) => {
     const user_id = req.user.user_id;
     const { id: eventId } = req.params;
 
+    // Check if event exists
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('event_id', eventId)
+      .single();
+
+    if (eventError) {
+      if (eventError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      throw eventError;
+    }
+
+    // Check if volunteer calls are enabled (only if column exists)
+    if (event.volunteer_calls_enabled !== undefined && !event.volunteer_calls_enabled) {
+      return res.status(400).json({ error: 'Volunteer calls are not currently open for this event' });
+    }
+
     // Already applied?
     const { data: existing, error: checkError } = await supabase
       .from('volunteer_applications')

@@ -73,6 +73,28 @@ const eventService = {
       console.error(`Error deleting event ${event_id}:`, error.message);
       return { success: false, error: error.message };
     }
+  },
+
+  // Toggle volunteer calls
+  toggleVolunteerCalls: async (eventId, enabled) => {
+    try {
+      const response = await api.put(`/events/${eventId}/volunteer-calls`, { enabled });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error toggling volunteer calls for event ${eventId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Toggle registrations
+  toggleRegistrations: async (eventId, enabled) => {
+    try {
+      const response = await api.put(`/events/${eventId}/registrations`, { enabled });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error toggling registrations for event ${eventId}:`, error.message);
+      return { success: false, error: error.message };
+    }
   }
     
 };

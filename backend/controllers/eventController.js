@@ -91,7 +91,9 @@ export const getOrganizerEvents = async (req, res) => {
     const events = data.map(event => ({
       ...event,
       reg_count: event.registered_count,  // Frontend expects 'reg_count'
-      vol_count: event.total_volunteer_applications  // Frontend expects 'vol_count'
+      vol_count: event.total_volunteer_applications,  // Frontend expects 'vol_count'
+      volunteer_calls_enabled: event.volunteer_calls_enabled ?? true, // Default to true if column doesn't exist
+      registrations_enabled: event.registrations_enabled ?? true // Default to true if column doesn't exist
     }));
 
     res.json({ events });
@@ -258,6 +260,108 @@ export const deleteEvent = async (req, res) => {
   }
 };
 
+// Toggle volunteer calls for an event
+export const toggleVolunteerCalls = async (req, res) => {
+  const { id } = req.params;
+  const { enabled } = req.body;
+
+  try {
+    // Check if event exists and user is the organizer
+    const { data: eventCheck, error: checkError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('event_id', id)
+      .eq('created_by', req.user.user_id)
+      .single();
+
+    if (checkError) {
+      if (checkError.code === 'PGRST116') {
+        return res.status(404).json({ success: false, error: 'Event not found or not authorized' });
+      }
+      throw checkError;
+    }
+
+    // Try to update volunteer calls setting
+    const { data, error } = await supabase
+      .from('events')
+      .update({ volunteer_calls_enabled: enabled })
+      .eq('event_id', id)
+      .select()
+      .single();
+
+    if (error) {
+      // If column doesn't exist, return a helpful message
+      if (error.message && error.message.includes('volunteer_calls_enabled')) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Database migration required. Please run the add_event_controls.sql script first.' 
+        });
+      }
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      message: `Volunteer calls ${enabled ? 'enabled' : 'disabled'} successfully`,
+      data
+    });
+  } catch (error) {
+    console.error('Toggle Volunteer Calls Error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to update volunteer calls setting' });
+  }
+};
+
+// Toggle registrations for an event
+export const toggleRegistrations = async (req, res) => {
+  const { id } = req.params;
+  const { enabled } = req.body;
+
+  try {
+    // Check if event exists and user is the organizer
+    const { data: eventCheck, error: checkError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('event_id', id)
+      .eq('created_by', req.user.user_id)
+      .single();
+
+    if (checkError) {
+      if (checkError.code === 'PGRST116') {
+        return res.status(404).json({ success: false, error: 'Event not found or not authorized' });
+      }
+      throw checkError;
+    }
+
+    // Try to update registrations setting
+    const { data, error } = await supabase
+      .from('events')
+      .update({ registrations_enabled: enabled })
+      .eq('event_id', id)
+      .select()
+      .single();
+
+    if (error) {
+      // If column doesn't exist, return a helpful message
+      if (error.message && error.message.includes('registrations_enabled')) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Database migration required. Please run the add_event_controls.sql script first.' 
+        });
+      }
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      message: `Registrations ${enabled ? 'enabled' : 'disabled'} successfully`,
+      data
+    });
+  } catch (error) {
+    console.error('Toggle Registrations Error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to update registrations setting' });
+  }
+};
+
 // ==============================
 // Student Controllers
 // ==============================
@@ -284,7 +388,14 @@ export const getAllEvents = async (req, res) => {
     
     if (error) throw error;
 
-    res.json({ events: data });
+    // Add default values for new columns if they don't exist
+    const eventsWithDefaults = data.map(event => ({
+      ...event,
+      volunteer_calls_enabled: event.volunteer_calls_enabled ?? true, // Default to true for existing events
+      registrations_enabled: event.registrations_enabled ?? true // Default to true for existing events
+    }));
+
+    res.json({ events: eventsWithDefaults });
   } catch (err) {
     console.error('getAllEvents error:', err.message);
     res.status(500).json({ error: 'Failed to fetch events' });

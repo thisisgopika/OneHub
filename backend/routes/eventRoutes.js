@@ -10,6 +10,8 @@ import {
   deleteEvent,
   getEventByID,
   getAllEvents,
+  toggleVolunteerCalls,
+  toggleRegistrations,
 } from '../controllers/eventController.js';
 
 // Student controllers
@@ -43,6 +45,8 @@ router.delete('/:id', authMiddleware, deleteEvent);
 router.get('/:id/volunteers', authMiddleware, getEventVolunteers);
 router.put('/volunteers/:id/accept', authMiddleware, acceptVolunteer);  
 router.put('/volunteers/:id/reject', authMiddleware, rejectVolunteer);
+router.put('/:id/volunteer-calls', authMiddleware, toggleVolunteerCalls);
+router.put('/:id/registrations', authMiddleware, toggleRegistrations);
 
 // ==============================
 // Student Routes

@@ -78,6 +78,7 @@ function ReportsTable() {
                   <tr>
                     <th>Name</th>
                     <th>User ID</th>
+                    <th>Semester</th>
                     <th>Event Name</th>
                     <th>Participation Type</th>
                     <th>Date</th>
@@ -88,6 +89,7 @@ function ReportsTable() {
                     <tr key={index}>
                       <td>{row.name || 'N/A'}</td>
                       <td>{row.user_id || 'N/A'}</td>
+                      <td>{row.semester || 'N/A'}</td>
                       <td>{row.event_name || 'N/A'}</td>
                       <td>{row.participation_type || 'N/A'}</td>
                       <td>{row.date ? new Date(row.date).toLocaleDateString() : 'N/A'}</td>

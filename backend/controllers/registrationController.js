@@ -13,7 +13,7 @@ export const register = async (req, res) => {
     // 1. Check if event exists
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('deadline, max_participants')
+      .select('*')
       .eq('event_id', eventId)
       .single();
 
@@ -22,6 +22,11 @@ export const register = async (req, res) => {
         return res.status(404).json({ error: 'Event not found' });
       }
       throw eventError;
+    }
+
+    // 1.1. Check if registrations are enabled (only if column exists)
+    if (event.registrations_enabled !== undefined && !event.registrations_enabled) {
+      return res.status(400).json({ error: 'Registrations are not currently open for this event' });
     }
 
     // 2. Deadline check

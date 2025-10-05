@@ -54,10 +54,18 @@ const EventCard = ({ event, onRegister, onVolunteer, isRegistered, isVolunteer }
           <button
             onClick={() => onRegister(event.event_id)}
             className="btn btn-primary"
-            disabled={isVolunteer}
-            title={isVolunteer ? "Cannot register - you have applied as volunteer for this event" : "Register for this event"}
+            disabled={isVolunteer || !event.registrations_enabled}
+            title={
+              !event.registrations_enabled 
+                ? "Registrations are currently closed for this event"
+                : isVolunteer 
+                ? "Cannot register - you have applied as volunteer for this event" 
+                : "Register for this event"
+            }
           >
-            <span>Register</span>
+            <span>
+              {event.registrations_enabled ? 'Register' : 'Registration Closed'}
+            </span>
           </button>
         ) : (
           <div className="registered-badge">
@@ -70,10 +78,18 @@ const EventCard = ({ event, onRegister, onVolunteer, isRegistered, isVolunteer }
           <button
             onClick={() => onVolunteer(event.event_id)}
             className="btn btn-secondary"
-            disabled={isRegistered}
-            title={isRegistered ? "Cannot apply as volunteer - you are already registered for this event" : "Apply as volunteer for this event"}
+            disabled={isRegistered || !event.volunteer_calls_enabled}
+            title={
+              !event.volunteer_calls_enabled
+                ? "Volunteer calls are currently closed for this event"
+                : isRegistered 
+                ? "Cannot apply as volunteer - you are already registered for this event" 
+                : "Apply as volunteer for this event"
+            }
           >
-            <span>Apply as Volunteer</span>
+            <span>
+              {event.volunteer_calls_enabled ? 'Apply as Volunteer' : 'Volunteer Calls Closed'}
+            </span>
           </button>
         ) : (
           <div className="volunteer-applied-badge">
@@ -81,6 +97,18 @@ const EventCard = ({ event, onRegister, onVolunteer, isRegistered, isVolunteer }
             <span>Volunteer Applied</span>
           </div>
         )}
+      </div>
+
+      {/* Status indicators */}
+      <div className="event-status">
+        <div className={`status-indicator ${event.registrations_enabled ? 'open' : 'closed'}`}>
+          <span className="status-dot"></span>
+          <span>Registrations {event.registrations_enabled ? 'Open' : 'Closed'}</span>
+        </div>
+        <div className={`status-indicator ${event.volunteer_calls_enabled ? 'open' : 'closed'}`}>
+          <span className="status-dot"></span>
+          <span>Volunteer Calls {event.volunteer_calls_enabled ? 'Open' : 'Closed'}</span>
+        </div>
       </div>
     </div>
   );

@@ -37,7 +37,8 @@ CREATE TABLE registrations (
     event_id INTEGER REFERENCES events(event_id) ON DELETE CASCADE,
     user_id VARCHAR(20) REFERENCES users(user_id) ON DELETE CASCADE,
     registration_date TIMESTAMP DEFAULT NOW(),
-    status VARCHAR(20) DEFAULT 'registered'
+    status VARCHAR(20) DEFAULT 'registered',
+    semester INTEGER NOT NULL
 );
 
 -- 4. Volunteer Applications table
@@ -48,7 +49,8 @@ CREATE TABLE volunteer_applications (
     status VARCHAR(20) DEFAULT 'pending', -- pending, accepted, rejected
     applied_date TIMESTAMP DEFAULT NOW(),
     decision_date TIMESTAMP,
-    decided_by VARCHAR(20) REFERENCES users(user_id)
+    decided_by VARCHAR(20) REFERENCES users(user_id),
+    semester INTEGER
 );
 
 -- 5. Notifications table
@@ -130,3 +132,133 @@ SELECT table_name
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
 ORDER BY table_name;
+
+CREATE OR REPLACE VIEW organizer_event_summary AS
+SELECT
+    e.event_id,
+    e.name,
+    e.description,
+    e.date,
+    e.deadline,
+    e.venue,
+    e.category,
+    e.created_by,
+    e.created_at,
+    e.max_participants,
+    e.volunteer_calls_enabled,
+    e.registrations_enabled,
+    COUNT(DISTINCT r.reg_id) as registered_count,
+    (e.max_participants - COUNT(DISTINCT r.reg_id)) as available_slots,
+    COUNT(DISTINCT v.app_id) as total_volunteer_applications,
+    COUNT(DISTINCT CASE WHEN v.status = 'pending' THEN v.app_id END) as pending_volunteers,
+    COUNT(DISTINCT CASE WHEN v.status = 'accepted' THEN v.app_id END) as accepted_volunteers,
+    COUNT(DISTINCT CASE WHEN v.status = 'rejected' THEN v.app_id END) as rejected_volunteers,
+    CASE
+        WHEN e.deadline < CURRENT_DATE THEN 'Closed'
+        WHEN COUNT(DISTINCT r.reg_id) >= e.max_participants THEN 'Full'
+        ELSE 'Open'
+    END as registration_status,
+    (e.deadline - CURRENT_DATE) as days_until_deadline
+FROM events e
+LEFT JOIN registrations r ON e.event_id = r.event_id AND r.status = 'registered'
+LEFT JOIN volunteer_applications v ON e.event_id = v.event_id
+GROUP BY e.event_id, e.name, e.description, e.date, e.deadline, e.venue, e.category, e.created_by, e.created_at, e.max_participants, e.volunteer_calls_enabled, e.registrations_enabled;
+
+
+
+CREATE OR REPLACE VIEW class_semester_performance AS
+SELECT
+    u.class,
+    u.semester,
+    -- Student counts
+    COUNT(DISTINCT u.user_id) as total_students,
+    COUNT(DISTINCT r.user_id) as active_students,
+
+    -- Registration metrics
+    COUNT(r.reg_id) as total_registrations,
+    ROUND(
+        COALESCE(
+            (COUNT(r.reg_id)::DECIMAL / NULLIF(COUNT(DISTINCT u.user_id), 0)),
+            0
+        ),
+        2
+    ) as avg_events_per_student,
+
+    -- Engagement rate
+    ROUND(
+        CASE
+            WHEN COUNT(DISTINCT u.user_id) > 0
+            THEN (COUNT(DISTINCT r.user_id)::DECIMAL / COUNT(DISTINCT u.user_id) * 100)
+            ELSE 0
+        END,
+        1
+    ) as engagement_rate,
+
+    -- Volunteer participation
+    COUNT(DISTINCT va.user_id) FILTER (WHERE va.status = 'accepted') as volunteer_count,
+
+    -- Category breakdown
+    COUNT(DISTINCT CASE WHEN e.category = 'Technical' THEN r.reg_id END) as technical_events,
+    COUNT(DISTINCT CASE WHEN e.category = 'Cultural' THEN r.reg_id END) as cultural_events,
+    COUNT(DISTINCT CASE WHEN e.category = 'Sports' THEN r.reg_id END) as sports_events,
+    COUNT(DISTINCT CASE WHEN e.category = 'Workshop' THEN r.reg_id END) as workshop_events,
+    COUNT(DISTINCT CASE WHEN e.category = 'Educational' THEN r.reg_id END) as educational_events
+
+FROM users u
+LEFT JOIN registrations r ON u.user_id = r.user_id AND r.status = 'registered'
+LEFT JOIN events e ON r.event_id = e.event_id
+LEFT JOIN volunteer_applications va ON u.user_id = va.user_id
+
+WHERE u.role = 'student'
+  AND u.class IS NOT NULL
+  AND u.semester IS NOT NULL
+GROUP BY u.class, u.semester
+ORDER BY engagement_rate DESC;
+
+
+CREATE OR REPLACE VIEW semester_comparison AS
+SELECT
+    u.semester,
+    COUNT(DISTINCT u.user_id) as total_students,
+    COUNT(DISTINCT r.user_id) as active_students,
+    COUNT(r.reg_id) as total_registrations,
+    ROUND(
+        CASE
+            WHEN COUNT(DISTINCT u.user_id) > 0
+            THEN (COUNT(DISTINCT r.user_id)::DECIMAL / COUNT(DISTINCT u.user_id) * 100)
+            ELSE 0
+        END,
+        1
+    ) as engagement_rate,
+    ROUND(
+        COALESCE(
+            (COUNT(r.reg_id)::DECIMAL / NULLIF(COUNT(DISTINCT u.user_id), 0)),
+            0
+        ),
+        2
+    ) as avg_events_per_student,
+    COUNT(DISTINCT va.user_id) FILTER (WHERE va.status = 'accepted') as volunteer_count
+FROM users u
+LEFT JOIN registrations r ON u.user_id = r.user_id AND r.status = 'registered'
+LEFT JOIN volunteer_applications va ON u.user_id = va.user_id
+WHERE u.role = 'student' AND u.semester IS NOT NULL
+GROUP BY u.semester
+ORDER BY u.semester;
+
+
+CREATE OR REPLACE VIEW top_performing_classes AS
+SELECT
+    class,
+    semester,
+    total_students,
+    active_students,
+    engagement_rate,
+    total_registrations,
+    avg_events_per_student,
+    volunteer_count,
+    RANK() OVER (ORDER BY engagement_rate DESC) as engagement_rank,
+    RANK() OVER (ORDER BY total_registrations DESC) as activity_rank
+FROM class_semester_performance
+WHERE class IS NOT NULL AND semester IS NOT NULL
+ORDER BY engagement_rate DESC
+LIMIT 10;
