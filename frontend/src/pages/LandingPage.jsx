@@ -39,20 +39,6 @@ const LandingPage = () => {
                 Sign In
               </Link>
             </div>
-            <div className="hero-stats">
-              <div className="stat">
-                <span className="stat-number">500+</span>
-                <span className="stat-label">Active Students</span>
-              </div>
-              <div className="stat">
-                <span className="stat-number">50+</span>
-                <span className="stat-label">Events Hosted</span>
-              </div>
-              <div className="stat">
-                <span className="stat-number">1000+</span>
-                <span className="stat-label">Registrations</span>
-              </div>
-            </div>
           </div>
           <div className="hero-features">
             <div className="feature-card">
@@ -80,7 +66,7 @@ const LandingPage = () => {
           <h2 className="section-title">Why Choose OneHub?</h2>
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">🎓</div>
+              {/*<div className="feature-icon">🎓</div>*/}
               <h3>For Students</h3>
               <p>Discover and register for exciting campus events, apply as volunteers, and track your participation history.</p>
               <ul>
