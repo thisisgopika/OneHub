@@ -16,7 +16,8 @@ export const createEvent = async (req, res) => {
       category,
       created_by,
       deadline,
-      max_participants
+      max_participants,
+      registration_form_link
     } = req.body;
 
     if (!name || !date || !venue || !category || !created_by || !deadline) {
@@ -53,7 +54,8 @@ export const createEvent = async (req, res) => {
         category,
         created_by,
         deadline,
-        max_participants: max_participants || 100
+        max_participants: max_participants || 100,
+        registration_form_link: registration_form_link || null
       })
       .select()
       .single();
@@ -78,22 +80,20 @@ export const getOrganizerEvents = async (req, res) => {
   try {
     const organizer_id = req.user.user_id;
     
-    // ✅ Use view instead of complex queries
     const { data, error } = await supabase
-      .from('organizer_event_summary')  // 👈 Using the view!
+      .from('organizer_event_summary')
       .select('*')
       .eq('created_by', organizer_id)
       .order('date', { ascending: true });
 
     if (error) throw error;
 
-    // Map to match frontend expectations
     const events = data.map(event => ({
       ...event,
-      reg_count: event.registered_count,  // Frontend expects 'reg_count'
-      vol_count: event.total_volunteer_applications,  // Frontend expects 'vol_count'
-      volunteer_calls_enabled: event.volunteer_calls_enabled ?? true, // Default to true if column doesn't exist
-      registrations_enabled: event.registrations_enabled ?? true // Default to true if column doesn't exist
+      reg_count: event.registered_count,
+      vol_count: event.total_volunteer_applications,
+      volunteer_calls_enabled: event.volunteer_calls_enabled ?? true,
+      registrations_enabled: event.registrations_enabled ?? true
     }));
 
     res.json({ events });
@@ -140,6 +140,7 @@ export const getEventReport = async (req, res) => {
     res.status(500).json({ error: 'Failed to generate report' });
   }
 };
+
 // Get event by ID
 export const getEventByID = async (req, res) => {
   const { id } = req.params;
@@ -178,7 +179,6 @@ export const updateEvent = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if event exists
     const { data: existingEvent, error: checkError } = await supabase
       .from('events')
       .select('*')
@@ -192,7 +192,6 @@ export const updateEvent = async (req, res) => {
       throw checkError;
     }
 
-    // Update event
     const { data, error } = await supabase
       .from('events')
       .update({
@@ -225,7 +224,6 @@ export const updateEvent = async (req, res) => {
 export const deleteEvent = async (req, res) => {
   const { id } = req.params;
   try {
-    // Check if event exists
     const { data: eventCheck, error: checkError } = await supabase
       .from('events')
       .select('*')
@@ -239,13 +237,11 @@ export const deleteEvent = async (req, res) => {
       throw checkError;
     }
 
-    // Delete related records first (cascade delete)
     await Promise.all([
       supabase.from('registrations').delete().eq('event_id', id),
       supabase.from('volunteer_applications').delete().eq('event_id', id)
     ]);
 
-    // Delete the event
     const { error: deleteError } = await supabase
       .from('events')
       .delete()
@@ -266,7 +262,6 @@ export const toggleVolunteerCalls = async (req, res) => {
   const { enabled } = req.body;
 
   try {
-    // Check if event exists and user is the organizer
     const { data: eventCheck, error: checkError } = await supabase
       .from('events')
       .select('*')
@@ -281,7 +276,6 @@ export const toggleVolunteerCalls = async (req, res) => {
       throw checkError;
     }
 
-    // Try to update volunteer calls setting
     const { data, error } = await supabase
       .from('events')
       .update({ volunteer_calls_enabled: enabled })
@@ -290,7 +284,6 @@ export const toggleVolunteerCalls = async (req, res) => {
       .single();
 
     if (error) {
-      // If column doesn't exist, return a helpful message
       if (error.message && error.message.includes('volunteer_calls_enabled')) {
         return res.status(400).json({ 
           success: false, 
@@ -317,7 +310,6 @@ export const toggleRegistrations = async (req, res) => {
   const { enabled } = req.body;
 
   try {
-    // Check if event exists and user is the organizer
     const { data: eventCheck, error: checkError } = await supabase
       .from('events')
       .select('*')
@@ -332,7 +324,6 @@ export const toggleRegistrations = async (req, res) => {
       throw checkError;
     }
 
-    // Try to update registrations setting
     const { data, error } = await supabase
       .from('events')
       .update({ registrations_enabled: enabled })
@@ -341,7 +332,6 @@ export const toggleRegistrations = async (req, res) => {
       .single();
 
     if (error) {
-      // If column doesn't exist, return a helpful message
       if (error.message && error.message.includes('registrations_enabled')) {
         return res.status(400).json({ 
           success: false, 
@@ -366,7 +356,7 @@ export const toggleRegistrations = async (req, res) => {
 // Student Controllers
 // ==============================
 
-// Get all events (for students) — supports ?upcoming=true and ?category=...
+// Get all events (for students)
 export const getAllEvents = async (req, res) => {
   try {
     const { upcoming, category } = req.query;
@@ -388,11 +378,10 @@ export const getAllEvents = async (req, res) => {
     
     if (error) throw error;
 
-    // Add default values for new columns if they don't exist
     const eventsWithDefaults = data.map(event => ({
       ...event,
-      volunteer_calls_enabled: event.volunteer_calls_enabled ?? true, // Default to true for existing events
-      registrations_enabled: event.registrations_enabled ?? true // Default to true for existing events
+      volunteer_calls_enabled: event.volunteer_calls_enabled ?? true,
+      registrations_enabled: event.registrations_enabled ?? true
     }));
 
     res.json({ events: eventsWithDefaults });

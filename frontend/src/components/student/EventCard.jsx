@@ -48,6 +48,21 @@ const EventCard = ({ event, onRegister, onVolunteer, isRegistered, isVolunteer }
           </div>
         )}
       </div>
+
+      {/* Google Form Link Section */}
+      {event.registration_form_link && (
+        <div className="external-form-section">
+          <a 
+            href={event.registration_form_link} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="external-form-link"
+          >
+            <span className="form-icon">📝</span>
+            <span>Fill Registration Form</span>
+          </a>
+        </div>
+      )}
       
       <div className="event-actions">
         {!isRegistered ? (

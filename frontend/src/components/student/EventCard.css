@@ -9,7 +9,6 @@
   overflow: hidden;
 }
 
-
 .event-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
@@ -82,6 +81,35 @@
 .meta-icon {
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+/* External Form Link Styles */
+.external-form-section {
+  margin: 1rem 0 1.5rem 0;
+  padding: 1rem;
+  background: rgba(255, 60, 31, 0.08);
+  border-left: 3px solid #ff3c1f;
+  border-radius: 8px;
+}
+
+.external-form-link {
+  color: #ff3c1f;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.external-form-link:hover {
+  color: #ff5f40;
+  transform: translateX(4px);
+}
+
+.form-icon {
+  font-size: 1.1rem;
 }
 
 .event-actions {
@@ -224,6 +252,10 @@
   .btn {
     width: 100%;
   }
+  
+  .external-form-section {
+    margin: 1rem 0;
+  }
 }
 
 @media (max-width: 480px) {
@@ -237,5 +269,9 @@
   
   .event-description {
     font-size: 0.85rem;
+  }
+  
+  .external-form-link {
+    font-size: 0.9rem;
   }
 }
