@@ -173,7 +173,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2024 OneHub. All rights reserved.</p>
+            <p>&copy; 2025 OneHub. All rights reserved.</p>
           </div>
         </div>
       </footer>
